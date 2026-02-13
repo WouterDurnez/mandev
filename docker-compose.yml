@@ -1,0 +1,24 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: mandev
+      POSTGRES_PASSWORD: mandev
+      POSTGRES_DB: mandev
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      MANDEV_DATABASE_URL: postgresql+asyncpg://mandev:mandev@db/mandev
+      MANDEV_SECRET_KEY: dev-secret-change-me
+    depends_on:
+      - db
+
+volumes:
+  pgdata:
