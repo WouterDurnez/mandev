@@ -1,0 +1,14 @@
+[project]
+name = "mandev"
+version = "0.1.0"
+description = "man.dev — your manual, as a developer"
+requires-python = ">=3.12"
+
+[tool.uv.workspace]
+members = ["core", "api", "cli"]
+
+[tool.uv.sources]
+mandev-core = { workspace = true }
+
+[tool.pytest.ini_options]
+testpaths = ["core/tests", "api/tests", "cli/tests"]
