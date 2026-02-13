@@ -1,0 +1,19 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import TerminalNav from '../components/TerminalNav.astro';
+import AuthForm from '../components/AuthForm.tsx';
+
+const navItems = [
+  { label: 'home', href: '/' },
+  { label: 'login', href: '/login' },
+  { label: 'signup', href: '/signup' },
+];
+---
+
+<BaseLayout title="Login">
+  <TerminalNav items={navItems} active="login" />
+  <main class="max-w-terminal mx-auto px-4 py-16">
+    <pre class="text-terminal-dim text-sm mb-4">$ mandev login</pre>
+    <AuthForm mode="login" client:load />
+  </main>
+</BaseLayout>
