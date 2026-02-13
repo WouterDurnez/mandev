@@ -1,9 +1,181 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import TerminalNav from '../components/TerminalNav.astro';
+import TerminalBox from '../components/TerminalBox.astro';
+import TerminalButton from '../components/TerminalButton.astro';
+import TypeWriter from '../components/TypeWriter.tsx';
+import SkillBar from '../components/SkillBar.astro';
+
+const navItems = [
+  { label: 'home', href: '/' },
+  { label: 'login', href: '/login' },
+  { label: 'signup', href: '/signup' },
+];
 ---
 
 <BaseLayout title="man.dev">
-  <main class="max-w-terminal mx-auto px-4 py-8">
-    <p class="text-terminal-dim">$ man dev</p>
+
+  <!-- ===== NAV ===== -->
+  <TerminalNav items={navItems} active="home" />
+
+  <main class="max-w-terminal mx-auto px-4 pb-16">
+
+    <!-- ===== HERO ===== -->
+    <section class="py-12">
+      <div class="text-terminal-dim mb-6">
+        <TypeWriter text="$ man dev" speed={80} client:load />
+      </div>
+
+      <pre class="text-terminal-accent text-xs mb-8 leading-relaxed">
+{`MAN.DEV(1)                Developer Manual                MAN.DEV(1)`}
+      </pre>
+
+      <div class="space-y-6">
+        <div>
+          <h2 class="text-terminal-accent text-xs uppercase tracking-widest mb-1">Name</h2>
+          <p class="pl-6">
+            <span class="text-terminal-fg font-bold">man.dev</span>
+            <span class="text-terminal-dim"> &mdash; your manual, as a developer</span>
+          </p>
+        </div>
+
+        <div>
+          <h2 class="text-terminal-accent text-xs uppercase tracking-widest mb-1">Synopsis</h2>
+          <p class="pl-6 text-terminal-fg">
+            <span class="text-terminal-dim">mandev</span>
+            {' '}init | push | preview | publish
+          </p>
+        </div>
+
+        <div>
+          <h2 class="text-terminal-accent text-xs uppercase tracking-widest mb-1">Description</h2>
+          <p class="pl-6 text-terminal-dim leading-relaxed">
+            Your dev profile is a config file.<br />
+            Everything else is just a view.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== CTA ===== -->
+    <section class="flex gap-4 flex-wrap mb-16">
+      <TerminalButton href="/signup" variant="primary">GET STARTED</TerminalButton>
+      <TerminalButton href="/demo" variant="ghost">VIEW DEMO</TerminalButton>
+    </section>
+
+    <hr class="ascii-line" />
+
+    <!-- ===== DEMO PROFILE ===== -->
+    <section class="mb-16">
+      <TerminalBox title="DEMO">
+        <div class="space-y-5 text-sm">
+
+          <!-- Name -->
+          <div>
+            <span class="text-terminal-accent text-xs uppercase tracking-widest">Name</span>
+            <p class="pl-6 mt-1">
+              <span class="text-terminal-fg font-bold">Ada Lovelace</span>
+              <span class="text-terminal-dim"> &mdash; Analytical engine whisperer</span>
+            </p>
+          </div>
+
+          <!-- Skills -->
+          <div>
+            <span class="text-terminal-accent text-xs uppercase tracking-widest">Skills</span>
+            <div class="pl-6 mt-2 space-y-1">
+              <SkillBar name="Python" level="expert" />
+              <SkillBar name="Rust" level="intermediate" />
+              <SkillBar name="TypeScript" level="advanced" />
+            </div>
+          </div>
+
+          <!-- Projects -->
+          <div>
+            <span class="text-terminal-accent text-xs uppercase tracking-widest">Projects</span>
+            <div class="pl-6 mt-1">
+              <p class="text-terminal-fg">analytical-engine</p>
+              <p class="text-terminal-dim text-xs pl-4">
+                The first general-purpose computation framework.
+                Translates mathematical notation into machine instructions.
+              </p>
+            </div>
+          </div>
+
+          <!-- Links -->
+          <div>
+            <span class="text-terminal-accent text-xs uppercase tracking-widest">Links</span>
+            <div class="pl-6 mt-1 space-y-0.5">
+              <p>
+                <span class="text-terminal-dim">github:</span>{' '}
+                <span class="text-terminal-accent">github.com/ada</span>
+              </p>
+              <p>
+                <span class="text-terminal-dim">web:</span>{' '}
+                <span class="text-terminal-accent">ada.dev</span>
+              </p>
+            </div>
+          </div>
+
+        </div>
+      </TerminalBox>
+    </section>
+
+    <hr class="ascii-line" />
+
+    <!-- ===== FEATURES ===== -->
+    <section class="mb-16">
+      <h2 class="text-terminal-accent text-xs uppercase tracking-widest mb-6">Features</h2>
+
+      <div class="grid gap-6 md:grid-cols-3">
+        <TerminalBox title="CONFIG">
+          <p class="text-terminal-dim text-sm leading-relaxed">
+            Your profile lives in a <span class="text-terminal-fg">.mandev.toml</span> file.
+            Version it. Diff it. Review it. It is just config.
+          </p>
+        </TerminalBox>
+
+        <TerminalBox title="CLI">
+          <p class="text-terminal-dim text-sm leading-relaxed">
+            <span class="text-terminal-fg">mandev init</span>,{' '}
+            <span class="text-terminal-fg">push</span>,{' '}
+            <span class="text-terminal-fg">preview</span>.
+            Manage everything from the terminal. No browser required.
+          </p>
+        </TerminalBox>
+
+        <TerminalBox title="THEMES">
+          <p class="text-terminal-dim text-sm leading-relaxed">
+            <span class="text-terminal-fg">10 color schemes</span>.{' '}
+            <span class="text-terminal-fg">8 monospace fonts</span>.
+            Your profile, your aesthetic.
+          </p>
+        </TerminalBox>
+      </div>
+    </section>
+
+    <hr class="ascii-line" />
+
+    <!-- ===== HOW IT WORKS ===== -->
+    <section class="mb-16">
+      <h2 class="text-terminal-accent text-xs uppercase tracking-widest mb-6">Quick Start</h2>
+      <div class="space-y-1 text-sm pl-2">
+        <p><span class="text-terminal-accent">$</span> <span class="text-terminal-fg">pip install mandev</span></p>
+        <p><span class="text-terminal-accent">$</span> <span class="text-terminal-fg">mandev init</span></p>
+        <p class="text-terminal-dim pl-4"># edit .mandev.toml</p>
+        <p><span class="text-terminal-accent">$</span> <span class="text-terminal-fg">mandev preview</span></p>
+        <p><span class="text-terminal-accent">$</span> <span class="text-terminal-fg">mandev push</span></p>
+        <p class="text-terminal-dim pl-4"># live at you.man.dev</p>
+      </div>
+    </section>
+
   </main>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="max-w-terminal mx-auto px-4 pb-8 text-center">
+    <hr class="ascii-line" />
+    <p class="text-terminal-dim text-xs mt-4">
+      man.dev v0.1.0 &mdash; your identity, version controlled.
+    </p>
+  </footer>
+
 </BaseLayout>
