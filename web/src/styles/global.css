@@ -1,0 +1,192 @@
+/* ============================================================
+   man.dev — Terminal Design System
+   ============================================================ */
+
+/* --- Google Fonts ------------------------------------------ */
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&family=IBM+Plex+Mono:ital,wght@0,400;0,700;1,400;1,700&family=Inconsolata:wght@400;700&family=JetBrains+Mono:ital,wght@0,400;0,700;1,400;1,700&family=Source+Code+Pro:ital,wght@0,400;0,700;1,400;1,700&family=Victor+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+
+/* --- Tailwind ---------------------------------------------- */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   Color Schemes — CSS Custom Properties
+   ============================================================ */
+
+:root {
+  --bg: #282a36;
+  --fg: #f8f8f2;
+  --accent: #bd93f9;
+  --dim: #6272a4;
+  --border: #44475a;
+}
+
+[data-scheme="dracula"] {
+  --bg: #282a36;
+  --fg: #f8f8f2;
+  --accent: #bd93f9;
+  --dim: #6272a4;
+  --border: #44475a;
+}
+
+[data-scheme="monokai"] {
+  --bg: #272822;
+  --fg: #f8f8f2;
+  --accent: #f92672;
+  --dim: #75715e;
+  --border: #3e3d32;
+}
+
+[data-scheme="gruvbox"] {
+  --bg: #282828;
+  --fg: #ebdbb2;
+  --accent: #fabd2f;
+  --dim: #928374;
+  --border: #3c3836;
+}
+
+[data-scheme="nord"] {
+  --bg: #2e3440;
+  --fg: #d8dee9;
+  --accent: #88c0d0;
+  --dim: #4c566a;
+  --border: #3b4252;
+}
+
+[data-scheme="solarized-dark"] {
+  --bg: #002b36;
+  --fg: #839496;
+  --accent: #b58900;
+  --dim: #586e75;
+  --border: #073642;
+}
+
+[data-scheme="catppuccin"] {
+  --bg: #1e1e2e;
+  --fg: #cdd6f4;
+  --accent: #cba6f7;
+  --dim: #585b70;
+  --border: #313244;
+}
+
+[data-scheme="tokyo-night"] {
+  --bg: #1a1b26;
+  --fg: #a9b1d6;
+  --accent: #7aa2f7;
+  --dim: #565f89;
+  --border: #292e42;
+}
+
+[data-scheme="one-dark"] {
+  --bg: #282c34;
+  --fg: #abb2bf;
+  --accent: #61afef;
+  --dim: #5c6370;
+  --border: #3e4451;
+}
+
+[data-scheme="github-dark"] {
+  --bg: #0d1117;
+  --fg: #c9d1d9;
+  --accent: #58a6ff;
+  --dim: #484f58;
+  --border: #21262d;
+}
+
+[data-scheme="terminal-green"] {
+  --bg: #0a0a0a;
+  --fg: #00ff00;
+  --accent: #00ff00;
+  --dim: #008000;
+  --border: #003300;
+}
+
+/* ============================================================
+   Base Styles
+   ============================================================ */
+
+body {
+  font-family: 'JetBrains Mono', 'Fira Code', 'Source Code Pro', monospace;
+  background-color: var(--bg);
+  color: var(--fg);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background-color: var(--accent);
+  color: var(--bg);
+}
+
+/* ============================================================
+   Cursor Blink Animation
+   ============================================================ */
+
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+.cursor-blink::after {
+  content: '\2588';
+  color: var(--accent);
+  animation: blink 1s step-end infinite;
+  margin-left: 1px;
+}
+
+/* ============================================================
+   Terminal Box
+   ============================================================ */
+
+.terminal-box {
+  border: 1px solid var(--border);
+  padding: 1rem 1.25rem;
+  position: relative;
+  margin-top: 1.5rem;
+}
+
+.terminal-box[data-title]::before {
+  content: '[ ' attr(data-title) ' ]';
+  position: absolute;
+  top: -0.75em;
+  left: 1rem;
+  background-color: var(--bg);
+  padding: 0 0.5rem;
+  color: var(--accent);
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* ============================================================
+   Scrollbar (webkit)
+   ============================================================ */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--dim);
+}
+
+/* ============================================================
+   Utility: ASCII line
+   ============================================================ */
+
+.ascii-line {
+  border: none;
+  border-top: 1px dashed var(--border);
+  margin: 1.5rem 0;
+}

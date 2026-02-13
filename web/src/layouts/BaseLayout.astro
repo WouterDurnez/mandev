@@ -1,0 +1,26 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  scheme?: string;
+  font?: string;
+}
+
+const { title, scheme = 'dracula', font = 'JetBrains Mono' } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en" data-scheme={scheme}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title} — man.dev</title>
+    <meta name="description" content="man.dev — your developer identity, version controlled." />
+    <style set:html={`body { font-family: '${font}', monospace; }`} />
+    <link rel="icon" href="/favicon.svg" />
+  </head>
+  <body class="min-h-screen">
+    <slot />
+  </body>
+</html>
