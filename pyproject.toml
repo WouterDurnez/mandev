@@ -9,6 +9,8 @@ members = ["core", "api", "cli"]
 
 [tool.uv.sources]
 mandev-core = { workspace = true }
+mandev-api = { workspace = true }
+mandev-cli = { workspace = true }
 
 [tool.pytest.ini_options]
 testpaths = ["core/tests", "api/tests", "cli/tests"]
@@ -17,5 +19,12 @@ pythonpath = ["core", "api", "cli"]
 [dependency-groups]
 dev = [
     "mandev-core",
+    "mandev-api",
+    "mandev-cli",
     "pytest>=9.0.2",
+    "anyio[trio]>=4.0",
+    "anyio>=4.0",
+    "pytest-anyio",
+    "httpx>=0.28",
+    "aiosqlite>=0.20",
 ]
