@@ -1,0 +1,33 @@
+profile:
+  name: Ada Lovelace
+  tagline: Analytical engine whisperer
+  about: Pioneering algorithms since 1843.
+
+theme:
+  scheme: dracula
+  font: JetBrains Mono
+  mode: dark
+
+layout:
+  sections:
+    - bio
+    - skills
+    - projects
+
+skills:
+  - name: Python
+    level: expert
+
+projects:
+  - name: man.dev
+    description: Your manual, as a developer.
+
+experience:
+  - role: Engineer
+    company: Acme
+    start: "2024-01"
+
+links:
+  - label: GitHub
+    url: https://github.com/ada
+    icon: github
