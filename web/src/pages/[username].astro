@@ -1,0 +1,226 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const { username } = Astro.params;
+const API_URL = import.meta.env.PUBLIC_API_URL || 'http://localhost:8000';
+
+interface Skill {
+  name: string;
+  level: 'beginner' | 'intermediate' | 'advanced' | 'expert';
+}
+
+interface Project {
+  name: string;
+  repo?: string;
+  url?: string;
+  description?: string;
+}
+
+interface Experience {
+  role: string;
+  company: string;
+  start: string;
+  end?: string;
+  description?: string;
+}
+
+interface Link {
+  label: string;
+  url: string;
+  icon?: string;
+}
+
+interface Theme {
+  scheme?: string;
+  font?: string;
+  mode?: string;
+}
+
+interface Layout {
+  sections?: string[];
+}
+
+interface Profile {
+  name: string;
+  tagline?: string;
+  about?: string;
+  avatar_url?: string;
+}
+
+interface ProfileData {
+  username?: string;
+  profile?: Profile;
+  theme?: Theme;
+  layout?: Layout;
+  skills?: Skill[];
+  projects?: Project[];
+  experience?: Experience[];
+  links?: Link[];
+}
+
+let profileData: ProfileData | null = null;
+let error: number | null = null;
+
+try {
+  const res = await fetch(`${API_URL}/api/profile/${username}`);
+  if (res.ok) {
+    profileData = await res.json() as ProfileData;
+  } else {
+    error = res.status;
+  }
+} catch {
+  error = 500;
+}
+
+const scheme = profileData?.theme?.scheme || 'dracula';
+const font = profileData?.theme?.font || 'JetBrains Mono';
+const profile = profileData?.profile;
+const sections = profileData?.layout?.sections || ['bio', 'skills', 'projects', 'experience', 'links'];
+
+const BAR_WIDTH = 20;
+const fillMap: Record<string, number> = {
+  beginner: 0.25,
+  intermediate: 0.5,
+  advanced: 0.75,
+  expert: 1.0,
+};
+
+function skillBar(level: string): string {
+  const fill = Math.round(BAR_WIDTH * (fillMap[level] || 0));
+  const empty = BAR_WIDTH - fill;
+  return '\u2588'.repeat(fill) + '\u2591'.repeat(empty);
+}
+
+const uname = (username || '').toUpperCase();
+---
+
+<BaseLayout title={profile ? `${profile.name} — man.dev` : `${username} — man.dev`} scheme={scheme} font={font}>
+  <main class="max-w-terminal mx-auto px-4 py-8 text-sm font-mono">
+    {error || !profileData || !profile ? (
+      <div class="py-16">
+        <p class="text-terminal-dim mb-2">$ man {username}</p>
+        <p class="text-terminal-fg">No manual entry for {username}</p>
+      </div>
+    ) : (
+      <div class="space-y-6">
+        {/* Man page header */}
+        <pre class="text-terminal-accent text-xs">
+{`${uname}(7)${' '.repeat(Math.max(1, 54 - uname.length * 2 - 14))}man.dev Manual${' '.repeat(Math.max(1, 54 - uname.length * 2 - 14))}${uname}(7)`}
+        </pre>
+
+        {sections.map((section: string) => {
+          if (section === 'bio') {
+            return (
+              <div>
+                <h2 class="text-terminal-accent text-xs uppercase tracking-widest mb-1">Name</h2>
+                <p class="pl-8">
+                  <span class="text-terminal-fg font-bold">{profile.name}</span>
+                  {profile.tagline && (
+                    <span class="text-terminal-dim"> &mdash; {profile.tagline}</span>
+                  )}
+                </p>
+                {profile.about && (
+                  <div class="mt-4">
+                    <h2 class="text-terminal-accent text-xs uppercase tracking-widest mb-1">Description</h2>
+                    <p class="pl-8 text-terminal-dim leading-relaxed whitespace-pre-line">{profile.about}</p>
+                  </div>
+                )}
+              </div>
+            );
+          }
+
+          if (section === 'skills' && profileData.skills && profileData.skills.length > 0) {
+            return (
+              <div>
+                <h2 class="text-terminal-accent text-xs uppercase tracking-widest mb-1">Skills</h2>
+                <div class="pl-8 space-y-1">
+                  {profileData.skills.map((skill: Skill) => (
+                    <div class="flex items-center gap-2">
+                      <span class="w-24 shrink-0 text-terminal-fg truncate">{skill.name}</span>
+                      <span class="text-terminal-accent">{skillBar(skill.level)}</span>
+                      <span class="text-terminal-dim text-xs">{skill.level}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          }
+
+          if (section === 'projects' && profileData.projects && profileData.projects.length > 0) {
+            return (
+              <div>
+                <h2 class="text-terminal-accent text-xs uppercase tracking-widest mb-1">Projects</h2>
+                <div class="pl-8 space-y-3">
+                  {profileData.projects.map((project: Project) => (
+                    <div>
+                      <p class="text-terminal-fg font-bold">{project.name}</p>
+                      {project.description && (
+                        <p class="text-terminal-dim pl-4 text-xs">{project.description}</p>
+                      )}
+                      {project.url && (
+                        <p class="pl-4 text-xs">
+                          <a href={project.url} class="text-terminal-accent hover:underline" target="_blank" rel="noopener noreferrer">{project.url}</a>
+                        </p>
+                      )}
+                      {project.repo && !project.url && (
+                        <p class="pl-4 text-xs">
+                          <a href={project.repo} class="text-terminal-accent hover:underline" target="_blank" rel="noopener noreferrer">{project.repo}</a>
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          }
+
+          if (section === 'experience' && profileData.experience && profileData.experience.length > 0) {
+            return (
+              <div>
+                <h2 class="text-terminal-accent text-xs uppercase tracking-widest mb-1">Experience</h2>
+                <div class="pl-8 space-y-3">
+                  {profileData.experience.map((exp: Experience) => (
+                    <div>
+                      <p class="text-terminal-fg">
+                        {exp.role} at {exp.company}{' '}
+                        <span class="text-terminal-dim">
+                          ({exp.start}&ndash;{exp.end || 'present'})
+                        </span>
+                      </p>
+                      {exp.description && (
+                        <p class="text-terminal-dim pl-4 text-xs">{exp.description}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          }
+
+          if (section === 'links' && profileData.links && profileData.links.length > 0) {
+            return (
+              <div>
+                <h2 class="text-terminal-accent text-xs uppercase tracking-widest mb-1">See Also</h2>
+                <div class="pl-8 space-y-0.5">
+                  {profileData.links.map((link: Link) => (
+                    <p>
+                      <span class="text-terminal-dim">{link.label}:</span>{' '}
+                      <a href={link.url} class="text-terminal-accent hover:underline" target="_blank" rel="noopener noreferrer">{link.url}</a>
+                    </p>
+                  ))}
+                </div>
+              </div>
+            );
+          }
+
+          return null;
+        })}
+
+        {/* Man page footer */}
+        <pre class="text-terminal-dim text-xs mt-8">
+{`man.dev                    ${new Date().getFullYear()}                     ${uname}(7)`}
+        </pre>
+      </div>
+    )}
+  </main>
+</BaseLayout>
