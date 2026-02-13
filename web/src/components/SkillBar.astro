@@ -1,0 +1,27 @@
+---
+interface Props {
+  name: string;
+  level: 'beginner' | 'intermediate' | 'advanced' | 'expert';
+  class?: string;
+}
+
+const { name, level, class: className = '' } = Astro.props;
+
+const BAR_WIDTH = 16;
+const fillMap: Record<string, number> = {
+  beginner: 0.25,
+  intermediate: 0.5,
+  advanced: 0.75,
+  expert: 1.0,
+};
+
+const fill = Math.round(BAR_WIDTH * fillMap[level]);
+const empty = BAR_WIDTH - fill;
+const bar = '\u2588'.repeat(fill) + '\u2591'.repeat(empty);
+---
+
+<div class={`flex items-center font-mono text-sm gap-2 ${className}`}>
+  <span class="w-32 shrink-0 text-terminal-fg truncate">{name}</span>
+  <span class="text-terminal-accent">{bar}</span>
+  <span class="text-terminal-dim text-xs">{level}</span>
+</div>
