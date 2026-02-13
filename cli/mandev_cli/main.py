@@ -1,6 +1,7 @@
 """CLI entry point for man.dev.
 
-Provides commands to initialise, authenticate, and push developer profiles.
+Provides commands to initialise, authenticate, push, preview, and
+validate developer profiles.
 """
 
 from __future__ import annotations
@@ -10,9 +11,10 @@ from pathlib import Path
 
 import httpx
 import typer
+from pydantic import ValidationError as PydanticValidationError
 from rich.console import Console
 
-from mandev_core import load_config
+from mandev_core import MandevConfig, load_config
 
 from mandev_cli.config import API_BASE_URL, AUTH_FILE
 
@@ -141,3 +143,87 @@ def push() -> None:
         raise typer.Exit(code=1)
 
     console.print("[green]Profile pushed successfully.[/green]")
+
+
+@app.command()
+def preview() -> None:
+    """Render the local config as a man page in the terminal."""
+    try:
+        config = load_config(Path.cwd())
+    except FileNotFoundError as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(code=1)
+
+    username = config.profile.name.upper().replace(" ", "")
+    header = f"{username}(7){'man.dev Manual':^40}{username}(7)"
+    console.print(header)
+    console.print()
+
+    # NAME
+    console.print("NAME")
+    tagline_part = f" -- {config.profile.tagline}" if config.profile.tagline else ""
+    console.print(f"       {config.profile.name}{tagline_part}")
+    console.print()
+
+    # DESCRIPTION
+    if config.profile.about:
+        console.print("DESCRIPTION")
+        console.print(f"       {config.profile.about}")
+        console.print()
+
+    # SKILLS
+    if config.skills:
+        console.print("SKILLS")
+        level_bars: dict[str, str] = {
+            "beginner": "\u2588" * 5 + "\u2591" * 15,
+            "intermediate": "\u2588" * 10 + "\u2591" * 10,
+            "advanced": "\u2588" * 15 + "\u2591" * 5,
+            "expert": "\u2588" * 20,
+        }
+        max_name_len = max(len(s.name) for s in config.skills)
+        for skill in config.skills:
+            bar = level_bars[skill.level]
+            padded = skill.name.ljust(max_name_len)
+            console.print(f"       {padded} {bar} {skill.level}")
+        console.print()
+
+    # PROJECTS
+    if config.projects:
+        console.print("PROJECTS")
+        for proj in config.projects:
+            desc = f"  {proj.description}" if proj.description else ""
+            console.print(f"       {proj.name}{desc}")
+        console.print()
+
+    # EXPERIENCE
+    if config.experience:
+        console.print("EXPERIENCE")
+        for exp in config.experience:
+            end = exp.end or "present"
+            console.print(f"       {exp.role} at {exp.company} ({exp.start}\u2013{end})")
+        console.print()
+
+    # SEE ALSO (links)
+    if config.links:
+        console.print("SEE ALSO")
+        for link in config.links:
+            console.print(f"       {link.label}: {link.url}")
+        console.print()
+
+
+@app.command()
+def validate() -> None:
+    """Validate the local config file against the schema."""
+    try:
+        load_config(Path.cwd())
+    except FileNotFoundError as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(code=1)
+    except PydanticValidationError as exc:
+        console.print("[red]Validation failed:[/red]")
+        for error in exc.errors():
+            loc = " -> ".join(str(l) for l in error["loc"])
+            console.print(f"  {loc}: {error['msg']}")
+        raise typer.Exit(code=1)
+
+    console.print("[green]Config is valid.[/green]")
