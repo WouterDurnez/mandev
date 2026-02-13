@@ -12,6 +12,7 @@ mandev-core = { workspace = true }
 
 [tool.pytest.ini_options]
 testpaths = ["core/tests", "api/tests", "cli/tests"]
+pythonpath = ["core", "api", "cli"]
 
 [dependency-groups]
 dev = [
