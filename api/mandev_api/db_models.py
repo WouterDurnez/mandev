@@ -43,3 +43,17 @@ class UserProfile(Base):
     )
 
     user: Mapped["User"] = relationship(back_populates="profile")
+
+
+class GitHubStatsCache(Base):
+    """Cached GitHub stats for a username."""
+
+    __tablename__ = "github_stats_cache"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    github_username: Mapped[str] = mapped_column(String(255), unique=True, index=True)
+    stats_json: Mapped[str] = mapped_column(Text, default="{}")
+    fetched_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+    )
