@@ -145,7 +145,7 @@ const uname = (username || '').toUpperCase();
 
 <BaseLayout title={profile ? `${profile.name} — man.dev` : `${username} — man.dev`} scheme={scheme} font={font}>
   <TerminalNav items={[{ label: 'home', href: '/' }, { label: 'login', href: '/login' }, { label: 'signup', href: '/signup' }]} />
-  <main class="max-w-terminal mx-auto px-4 py-8 text-sm font-mono">
+  <main class="max-w-terminal mx-auto px-4 pt-16 pb-8 text-sm font-mono">
     {error || !profileData || !profile ? (
       <div class="py-16">
         <p class="text-terminal-dim mb-2">$ man {username}</p>
