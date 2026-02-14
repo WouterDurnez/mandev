@@ -7,6 +7,7 @@ validate developer profiles.
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 import httpx
@@ -253,3 +254,64 @@ def export_json(
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(payload + "\n")
     console.print(f"[green]Exported config JSON to {output}[/green]")
+
+
+@app.command()
+def doctor() -> None:
+    """Run profile quality checks and suggest improvements."""
+    try:
+        config = load_config(Path.cwd())
+    except FileNotFoundError as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(code=1)
+
+    findings: list[str] = []
+    suggestions: list[str] = []
+
+    if not config.profile.about:
+        findings.append("Missing profile.about")
+        suggestions.append("Add a concise bio describing your focus and outcomes.")
+    elif len(config.profile.about.strip()) < 60:
+        findings.append("profile.about is very short")
+        suggestions.append("Expand your bio with concrete impact and domain context.")
+
+    if not config.skills:
+        findings.append("No skills listed")
+        suggestions.append("Add 3-8 skills to improve discoverability.")
+
+    if not config.projects:
+        findings.append("No projects listed")
+        suggestions.append("Add at least one project with links and outcomes.")
+    else:
+        missing_descriptions = sum(1 for project in config.projects if not project.description)
+        if missing_descriptions:
+            findings.append(f"{missing_descriptions} project(s) missing descriptions")
+            suggestions.append("Add short, result-focused descriptions for each project.")
+
+    if not config.links:
+        findings.append("No links listed")
+        suggestions.append("Add at least GitHub and one contact/personal link.")
+
+    date_re = re.compile(r"^\d{4}-\d{2}$")
+    invalid_dates = 0
+    for exp in config.experience:
+        if not date_re.match(exp.start):
+            invalid_dates += 1
+        if exp.end and exp.end != "present" and not date_re.match(exp.end):
+            invalid_dates += 1
+
+    if invalid_dates:
+        findings.append(f"{invalid_dates} experience date value(s) are not YYYY-MM")
+        suggestions.append("Use YYYY-MM format for experience start/end values.")
+
+    if findings:
+        console.print("[yellow]Doctor found profile issues:[/yellow]")
+        for finding in findings:
+            console.print(f"  - {finding}")
+        console.print()
+        console.print("[cyan]Suggestions:[/cyan]")
+        for suggestion in suggestions:
+            console.print(f"  - {suggestion}")
+        raise typer.Exit(code=1)
+
+    console.print("[green]Doctor check passed. Profile quality looks good.[/green]")
