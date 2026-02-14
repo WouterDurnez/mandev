@@ -7,4 +7,5 @@ export default defineConfig({
   integrations: [react(), tailwind()],
   output: 'server',
   adapter: node({ mode: 'standalone' }),
+  devToolbar: { enabled: false },
 });

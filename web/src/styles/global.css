@@ -103,6 +103,98 @@
 }
 
 /* ============================================================
+   Light Mode Variants
+   ============================================================ */
+
+[data-mode="light"] {
+  --bg: #f8f8f2;
+  --fg: #282a36;
+  --accent: #9b6dca;
+  --dim: #6272a4;
+  --border: #d8d5e4;
+}
+
+[data-mode="light"][data-scheme="dracula"] {
+  --bg: #f8f8f2;
+  --fg: #282a36;
+  --accent: #9b6dca;
+  --dim: #6272a4;
+  --border: #d8d5e4;
+}
+
+[data-mode="light"][data-scheme="monokai"] {
+  --bg: #fafaf5;
+  --fg: #272822;
+  --accent: #e3175e;
+  --dim: #8a856e;
+  --border: #ddddd0;
+}
+
+[data-mode="light"][data-scheme="gruvbox"] {
+  --bg: #fbf1c7;
+  --fg: #3c3836;
+  --accent: #b57614;
+  --dim: #928374;
+  --border: #d5c4a1;
+}
+
+[data-mode="light"][data-scheme="nord"] {
+  --bg: #eceff4;
+  --fg: #2e3440;
+  --accent: #5e81ac;
+  --dim: #7b88a1;
+  --border: #d8dee9;
+}
+
+[data-mode="light"][data-scheme="solarized-dark"] {
+  --bg: #fdf6e3;
+  --fg: #657b83;
+  --accent: #b58900;
+  --dim: #93a1a1;
+  --border: #eee8d5;
+}
+
+[data-mode="light"][data-scheme="catppuccin"] {
+  --bg: #eff1f5;
+  --fg: #4c4f69;
+  --accent: #8839ef;
+  --dim: #7c7f93;
+  --border: #ccd0da;
+}
+
+[data-mode="light"][data-scheme="tokyo-night"] {
+  --bg: #d5d6db;
+  --fg: #343b58;
+  --accent: #2e7de9;
+  --dim: #8990b3;
+  --border: #c4c8da;
+}
+
+[data-mode="light"][data-scheme="one-dark"] {
+  --bg: #fafafa;
+  --fg: #383a42;
+  --accent: #4078f2;
+  --dim: #a0a1a7;
+  --border: #e0e0e0;
+}
+
+[data-mode="light"][data-scheme="github-dark"] {
+  --bg: #ffffff;
+  --fg: #1f2328;
+  --accent: #0969da;
+  --dim: #656d76;
+  --border: #d0d7de;
+}
+
+[data-mode="light"][data-scheme="terminal-green"] {
+  --bg: #f0f5f0;
+  --fg: #0a3a0a;
+  --accent: #116611;
+  --dim: #5a7a5a;
+  --border: #c0d8c0;
+}
+
+/* ============================================================
    Base Styles
    ============================================================ */
 
@@ -126,6 +218,10 @@ html {
 
 .scroll-section-alt {
   background-color: color-mix(in srgb, var(--bg) 96%, var(--fg));
+}
+
+[data-mode="light"] .scroll-section-alt {
+  background-color: color-mix(in srgb, var(--bg) 94%, var(--fg));
 }
 
 /* --- Hero entrance ---------------------------------------- */

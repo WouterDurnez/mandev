@@ -1,5 +1,6 @@
 import { clearToken } from '../lib/api';
 import TypeWriter from './TypeWriter';
+import ModeToggle from './ModeToggle';
 
 interface DashboardNavProps {
   /** Currently active tab. */
@@ -33,6 +34,8 @@ export default function DashboardNav({ active = 'editor' }: DashboardNavProps) {
         >
           <span>$ </span><TypeWriter text="man dev" speed={80} loop />
         </a>
+        <ModeToggle />
+        <span style={{ color: 'var(--border)' }}>|</span>
         <a href="/dashboard" className={linkClass('editor')}>
           editor
         </a>

@@ -19,6 +19,17 @@ const { title, scheme = 'dracula', font = 'JetBrains Mono' } = Astro.props;
     <meta name="description" content="man.dev — your developer identity, version controlled." />
     <style set:html={`body { font-family: '${font}', monospace; }`} />
     <link rel="icon" href="/favicon.svg" />
+    <script is:inline>
+      (function () {
+        var mode = localStorage.getItem('mandev-mode');
+        if (!mode) {
+          mode = window.matchMedia('(prefers-color-scheme: light)').matches
+            ? 'light'
+            : 'dark';
+        }
+        document.documentElement.setAttribute('data-mode', mode);
+      })();
+    </script>
   </head>
   <body class="min-h-screen">
     <slot />

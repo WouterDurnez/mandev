@@ -28,13 +28,15 @@ const navItems = [
           <span class="text-terminal-dim text-lg"> &mdash; your developer profile, written like code</span>
         </p>
       </div>
-      <div class="scroll-indicator absolute bottom-10 left-1/2 -translate-x-1/2 text-terminal-dim text-xs select-none tracking-widest">
-        ↓
-      </div>
+      <button
+        onclick="document.getElementById('description').scrollIntoView({ behavior: 'smooth' })"
+        class="scroll-indicator absolute bottom-10 left-1/2 -translate-x-1/2 text-terminal-dim hover:text-terminal-fg text-xs select-none tracking-widest bg-transparent border-none cursor-pointer font-mono transition-colors duration-150"
+        aria-label="Scroll to next section"
+      >↓</button>
     </section>
 
     <!-- ═══════════════ DESCRIPTION ═══════════════ -->
-    <section class="scroll-section scroll-section-alt">
+    <section id="description" class="scroll-section scroll-section-alt">
       <div class="max-w-terminal mx-auto px-4 w-full">
         <h2 class="reveal text-terminal-accent text-xs uppercase tracking-widest mb-4">Description</h2>
         <div class="reveal pl-6 text-terminal-dim leading-relaxed space-y-4 text-sm">
@@ -49,6 +51,7 @@ const navItems = [
              That&rsquo;s it.</p>
         </div>
       </div>
+      <div class="scroll-indicator absolute bottom-10 left-1/2 -translate-x-1/2 text-terminal-dim text-xs select-none tracking-widest">↓</div>
     </section>
 
     <!-- ═══════════════ SYNOPSIS ═══════════════ -->
@@ -64,6 +67,7 @@ const navItems = [
           <p class="text-terminal-dim pl-6"># deploys to you.man.dev</p>
         </div>
       </div>
+      <div class="scroll-indicator absolute bottom-10 left-1/2 -translate-x-1/2 text-terminal-dim text-xs select-none tracking-widest">↓</div>
     </section>
 
     <!-- ═══════════════ EXAMPLES ═══════════════ -->
@@ -83,11 +87,19 @@ level = "expert"
 [theme]
 scheme = "dracula"`}</pre>
         </div>
-        <div class="reveal pl-6 mt-8">
+      </div>
+      <div class="scroll-indicator absolute bottom-10 left-1/2 -translate-x-1/2 text-terminal-dim text-xs select-none tracking-widest">↓</div>
+    </section>
+
+    <!-- ═══════════════ EXAMPLES: DIFF ═══════════════ -->
+    <section class="scroll-section">
+      <div class="max-w-terminal mx-auto px-4 w-full">
+        <div class="reveal pl-6">
           <p class="text-terminal-dim text-sm mb-3">What this looks like compared to a generic bio:</p>
           <DiffToggle client:load />
         </div>
       </div>
+      <div class="scroll-indicator absolute bottom-10 left-1/2 -translate-x-1/2 text-terminal-dim text-xs select-none tracking-widest">↓</div>
     </section>
 
     <!-- ═══════════════ OPTIONS ═══════════════ -->
@@ -105,6 +117,7 @@ scheme = "dracula"`}</pre>
              Source Code Pro, Victor Mono, Cascadia Code, Hack</p>
         </div>
       </div>
+      <div class="scroll-indicator absolute bottom-10 left-1/2 -translate-x-1/2 text-terminal-dim text-xs select-none tracking-widest">↓</div>
     </section>
 
     <!-- ═══════════════ GETTING STARTED ═══════════════ -->

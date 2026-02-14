@@ -1,5 +1,6 @@
 ---
 import TypeWriter from './TypeWriter.tsx';
+import ModeToggle from './ModeToggle.tsx';
 
 interface NavItem {
   label: string;
@@ -17,6 +18,9 @@ const { items, active, class: className = '' } = Astro.props;
 
 <header class={`floating-nav fixed top-0 left-0 right-0 z-50 border-b transition-all duration-300 ${className}`}>
   <nav class="relative px-4 py-3 font-mono text-sm flex items-center justify-center">
+    <div class="nav-links absolute left-4 flex items-center gap-1">
+      <ModeToggle client:load />
+    </div>
     <a href="/" class="text-terminal-dim hover:text-terminal-fg transition-colors duration-150 no-underline">
       <span>$ </span><TypeWriter text="man dev" speed={80} loop client:load />
     </a>
