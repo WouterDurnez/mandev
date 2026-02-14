@@ -285,6 +285,24 @@ SEED_USERS = [
             "theme": {"scheme": "solarized-dark", "font": "Cascadia Code", "mode": "light"},
         },
     },
+    {
+        "username": "wouter",
+        "email": "wouter@rugvin.be",
+        "password": "darksoul",
+        "config": {
+            "profile": {
+                "name": "Wouter",
+                "tagline": "",
+                "about": "",
+                "avatar": _generate_identicon("wouter"),
+            },
+            "theme": {"scheme": "dracula", "font": "JetBrains Mono", "mode": "dark"},
+            "skills": [],
+            "projects": [],
+            "experience": [],
+            "links": [],
+        },
+    },
 ]
 
 SEED_USERNAMES = [u["username"] for u in SEED_USERS]
