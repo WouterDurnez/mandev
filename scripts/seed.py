@@ -298,7 +298,8 @@ def _fake_contributions(seed: int, activity_level: float = 0.7) -> list[dict]:
     :returns: List of ``{date, count}`` dicts.
     """
     days: list[dict] = []
-    base = date(2025, 2, 15)
+    today = date.today()
+    base = today - timedelta(days=364)
     for i in range(365):
         d = base + timedelta(days=i)
         # Simple hash-based deterministic "random"
