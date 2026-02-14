@@ -21,7 +21,7 @@ interface PixelAvatarProps {
 export default function PixelAvatar({
   value,
   onChange,
-  resolution = 16,
+  resolution = 32,
   size = 128,
 }: PixelAvatarProps) {
   const [preview, setPreview] = useState<string | undefined>(value);

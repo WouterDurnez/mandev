@@ -5,7 +5,7 @@ const API_URL = import.meta.env.PUBLIC_API_URL || 'http://localhost:8000';
 
 interface ProfileData {
   username?: string;
-  profile?: { name: string; tagline?: string };
+  profile?: { name: string; tagline?: string; avatar?: string };
   theme?: { scheme?: string };
   skills?: { name: string; level: string }[];
   github_stats?: {
@@ -37,23 +37,42 @@ function renderCard(username: string, data: ProfileData): string {
   const profile = data.profile;
   const name = profile?.name || username;
   const tagline = profile?.tagline || '';
+  const avatar = profile?.avatar;
   const skills = (data.skills || []).slice(0, 5);
   const stats = data.github_stats;
+
+  const AVATAR_SIZE = 64;
+  const hasAvatar = !!avatar;
+  const textX = hasAvatar ? PAD + AVATAR_SIZE + 16 : PAD;
 
   let y = PAD + 20;
   const lines: string[] = [];
 
+  // Avatar (top-left, clipped to rounded rect)
+  if (hasAvatar) {
+    const ax = PAD;
+    const ay = PAD;
+    lines.push(`<defs><clipPath id="avatar-clip"><rect x="${ax}" y="${ay}" width="${AVATAR_SIZE}" height="${AVATAR_SIZE}" rx="4" /></clipPath></defs>`);
+    lines.push(`<rect x="${ax}" y="${ay}" width="${AVATAR_SIZE}" height="${AVATAR_SIZE}" rx="4" fill="${c.border}" />`);
+    lines.push(`<image href="${avatar}" x="${ax}" y="${ay}" width="${AVATAR_SIZE}" height="${AVATAR_SIZE}" clip-path="url(#avatar-clip)" />`);
+  }
+
   // Name
-  lines.push(`<text x="${PAD}" y="${y}" fill="${c.fg}" font-size="18" font-weight="bold" font-family="${FONT}">${escapeXml(name)}</text>`);
+  lines.push(`<text x="${textX}" y="${y}" fill="${c.fg}" font-size="18" font-weight="bold" font-family="${FONT}">${escapeXml(name)}</text>`);
   y += 22;
 
   // Tagline
   if (tagline) {
-    lines.push(`<text x="${PAD}" y="${y}" fill="${c.dim}" font-size="12" font-family="${FONT}">${escapeXml(tagline)}</text>`);
+    lines.push(`<text x="${textX}" y="${y}" fill="${c.dim}" font-size="12" font-family="${FONT}">${escapeXml(tagline)}</text>`);
     y += 20;
   }
 
-  y += 8;
+  // Push y past avatar if needed
+  if (hasAvatar) {
+    y = Math.max(y + 8, PAD + AVATAR_SIZE + 16);
+  } else {
+    y += 8;
+  }
 
   // Skills
   if (skills.length > 0) {

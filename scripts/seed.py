@@ -5,8 +5,12 @@ on every run. Uses the ORM directly -- no HTTP calls required.
 """
 
 import asyncio
+import base64
+import io
 import json
+import struct
 import sys
+import zlib
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
@@ -25,6 +29,77 @@ from mandev_api.database import Base, SessionLocal, engine  # noqa: E402
 from mandev_api.db_models import GitHubStatsCache, User, UserProfile  # noqa: E402
 
 # ---------------------------------------------------------------------------
+# Avatar generation (pure Python PNG identicons)
+# ---------------------------------------------------------------------------
+
+
+def _make_png(pixels: list[list[tuple[int, int, int]]], size: int) -> bytes:
+    """Create a minimal RGB PNG from a pixel grid.
+
+    :param pixels: 2D grid of (r, g, b) tuples.
+    :param size: Width/height of the square image.
+    :returns: Raw PNG bytes.
+    """
+    def _chunk(chunk_type: bytes, data: bytes) -> bytes:
+        c = chunk_type + data
+        return struct.pack(">I", len(data)) + c + struct.pack(">I", zlib.crc32(c) & 0xFFFFFFFF)
+
+    header = b"\x89PNG\r\n\x1a\n"
+    ihdr = _chunk(b"IHDR", struct.pack(">IIBBBBB", size, size, 8, 2, 0, 0, 0))
+
+    raw = b""
+    for row in pixels:
+        raw += b"\x00"  # filter: none
+        for r, g, b in row:
+            raw += struct.pack("BBB", r, g, b)
+
+    idat = _chunk(b"IDAT", zlib.compress(raw))
+    iend = _chunk(b"IEND", b"")
+    return header + ihdr + idat + iend
+
+
+def _generate_identicon(seed_str: str, grid: int = 8, px_size: int = 4) -> str:
+    """Generate a symmetric identicon as a data URL.
+
+    :param seed_str: String to derive the pattern from (e.g. username).
+    :param grid: Grid size (half is mirrored for symmetry).
+    :param px_size: Pixels per grid cell in the output image.
+    :returns: A ``data:image/png;base64,...`` URL.
+    """
+    h = hash(seed_str + "identicon")
+    # Pick a foreground color from the hash
+    r = (h >> 16) & 0xFF
+    g = (h >> 8) & 0xFF
+    b = h & 0xFF
+    # Ensure decent contrast: boost saturation
+    mx = max(r, g, b)
+    if mx < 100:
+        r, g, b = min(r + 100, 255), min(g + 80, 255), min(b + 120, 255)
+
+    bg = (40, 42, 54)  # dark background
+    fg = (r, g, b)
+
+    half = (grid + 1) // 2
+    img_size = grid * px_size
+    pixels: list[list[tuple[int, int, int]]] = []
+
+    for row_i in range(grid):
+        pixel_row: list[tuple[int, int, int]] = []
+        for col_i in range(grid):
+            # Mirror horizontally
+            mi = col_i if col_i < half else grid - 1 - col_i
+            bit = hash((seed_str, row_i, mi)) % 3  # ~66% fill
+            cell_color = fg if bit > 0 else bg
+            pixel_row.extend([cell_color] * px_size)
+        for _ in range(px_size):
+            pixels.append(pixel_row)
+
+    png_bytes = _make_png(pixels, img_size)
+    b64 = base64.b64encode(png_bytes).decode()
+    return f"data:image/png;base64,{b64}"
+
+
+# ---------------------------------------------------------------------------
 # Seed data
 # ---------------------------------------------------------------------------
 
@@ -38,6 +113,7 @@ SEED_USERS = [
                 "name": "Alice Chen",
                 "tagline": "builds reliable backend systems",
                 "about": "Staff engineer focused on distributed systems and developer tooling. Previously at Stripe and Datadog. I care about making infrastructure invisible so product teams can move fast.",
+                "avatar": _generate_identicon("alice"),
             },
             "skills": [
                 {"name": "Python", "level": "expert"},
@@ -75,6 +151,7 @@ SEED_USERS = [
                 "name": "Bob Rivera",
                 "tagline": "pixels and performance",
                 "about": "Frontend engineer obsessed with animation, accessibility, and making the web feel alive. Design systems enthusiast.",
+                "avatar": _generate_identicon("bob"),
             },
             "skills": [
                 {"name": "TypeScript", "level": "expert"},
@@ -112,6 +189,7 @@ SEED_USERS = [
                 "name": "Carol Nakamura",
                 "tagline": "keeping things running",
                 "about": "Platform engineer. I automate the boring stuff.",
+                "avatar": _generate_identicon("carol"),
             },
             "skills": [
                 {"name": "Terraform", "level": "expert"},
@@ -147,6 +225,7 @@ SEED_USERS = [
                 "name": "Dave Okonkwo",
                 "tagline": "open source everything",
                 "about": "Full-time open source maintainer. I believe good tools should be free. Maintaining 12 packages with 50k+ combined downloads/month.",
+                "avatar": _generate_identicon("dave"),
             },
             "skills": [
                 {"name": "Python", "level": "expert"},
@@ -185,6 +264,7 @@ SEED_USERS = [
                 "name": "Eve Martinez",
                 "tagline": "learning in public",
                 "about": "Junior developer, 6 months in. Currently learning React and building my first side projects. Documenting everything I learn.",
+                "avatar": _generate_identicon("eve"),
             },
             "skills": [
                 {"name": "JavaScript", "level": "intermediate"},

@@ -140,6 +140,30 @@ function heatmapOpacity(count: number): number {
   return 1.0;
 }
 
+const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+interface MonthLabel {
+  name: string;
+  col: number;
+}
+
+function getMonthLabels(contributions: { date: string; count: number }[]): MonthLabel[] {
+  if (contributions.length === 0) return [];
+  const labels: MonthLabel[] = [];
+  let lastMonth = -1;
+  for (let i = 0; i < contributions.length; i++) {
+    const col = Math.floor(i / 7);
+    const month = new Date(contributions[i].date).getMonth();
+    if (month !== lastMonth) {
+      labels.push({ name: MONTH_NAMES[month], col });
+      lastMonth = month;
+    }
+  }
+  return labels;
+}
+
+const monthLabels = githubStats ? getMonthLabels(githubStats.contributions) : [];
+
 const uname = (username || '').toUpperCase();
 ---
 
@@ -169,7 +193,7 @@ const uname = (username || '').toUpperCase();
                       alt={`${profile.name} avatar`}
                       width="96"
                       height="96"
-                      style="image-rendering: pixelated; border: 1px solid var(--border);"
+                      style="border: 1px solid var(--border); border-radius: 2px;"
                     />
                   </div>
                 )}
@@ -304,10 +328,21 @@ const uname = (username || '').toUpperCase();
                   <h2 class="text-terminal-accent text-xs uppercase tracking-widest mb-1">GitHub</h2>
                 )}
                 <div class="pl-8 mt-2" style="overflow-x: auto;">
-                  <div style="display: inline-grid; grid-template-rows: repeat(7, 1fr); grid-auto-flow: column; gap: 2px; font-size: 0.5rem; line-height: 1;">
-                    {githubStats.contributions.map((day) => (
-                      <span style={`color: var(--accent); opacity: ${heatmapOpacity(day.count)};`} title={`${day.date}: ${day.count}`}>{'\u2588'}</span>
-                    ))}
+                  <div style="display: inline-block; position: relative;">
+                    <div style="display: flex; font-size: 0.5rem; line-height: 1; color: var(--dim); margin-bottom: 2px;">
+                      {monthLabels.map((label, i) => {
+                        const nextCol = i + 1 < monthLabels.length ? monthLabels[i + 1].col : Math.ceil(githubStats.contributions.length / 7);
+                        const span = nextCol - label.col;
+                        return (
+                          <span style={`width: ${span * 10}px; flex-shrink: 0;`}>{label.name}</span>
+                        );
+                      })}
+                    </div>
+                    <div style="display: inline-grid; grid-template-rows: repeat(7, 1fr); grid-auto-flow: column; gap: 2px; font-size: 0.5rem; line-height: 1;">
+                      {githubStats.contributions.map((day) => (
+                        <span style={`color: var(--accent); opacity: ${heatmapOpacity(day.count)};`} title={`${day.date}: ${day.count}`}>{'\u2588'}</span>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
