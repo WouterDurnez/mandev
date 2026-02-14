@@ -13,6 +13,10 @@ web:
 test:
     uv run pytest -v
 
+# Seed database with fake profiles
+seed:
+    uv run python scripts/seed.py
+
 # Install all dependencies
 install:
     uv sync
