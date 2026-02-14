@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     database_url: str = "sqlite+aiosqlite:///mandev.db"
     secret_key: str = "changeme-in-production"
     access_token_expire_minutes: int = 60 * 24 * 7  # 1 week
+    github_token: str | None = None
 
     model_config = {"env_prefix": "MANDEV_"}
 
