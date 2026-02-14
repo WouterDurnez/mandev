@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import TerminalNav from '../components/TerminalNav.astro';
 
 const { username } = Astro.params;
 const API_URL = import.meta.env.PUBLIC_API_URL || 'http://localhost:8000';
@@ -44,7 +45,7 @@ interface Profile {
   name: string;
   tagline?: string;
   about?: string;
-  avatar_url?: string;
+  avatar?: string;
 }
 
 interface ProfileData {
@@ -95,6 +96,7 @@ const uname = (username || '').toUpperCase();
 ---
 
 <BaseLayout title={profile ? `${profile.name} — man.dev` : `${username} — man.dev`} scheme={scheme} font={font}>
+  <TerminalNav items={[{ label: 'home', href: '/' }, { label: 'login', href: '/login' }, { label: 'signup', href: '/signup' }]} />
   <main class="max-w-terminal mx-auto px-4 py-8 text-sm font-mono">
     {error || !profileData || !profile ? (
       <div class="py-16">
@@ -112,6 +114,17 @@ const uname = (username || '').toUpperCase();
           if (section === 'bio') {
             return (
               <div>
+                {profile.avatar && (
+                  <div class="mb-4">
+                    <img
+                      src={profile.avatar}
+                      alt={`${profile.name} avatar`}
+                      width="96"
+                      height="96"
+                      style="image-rendering: pixelated; border: 1px solid var(--border);"
+                    />
+                  </div>
+                )}
                 <h2 class="text-terminal-accent text-xs uppercase tracking-widest mb-1">Name</h2>
                 <p class="pl-8">
                   <span class="text-terminal-fg font-bold">{profile.name}</span>

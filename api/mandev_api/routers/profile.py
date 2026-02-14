@@ -105,16 +105,19 @@ async def put_own_profile(
     return json.loads(profile.config_json)
 
 
-@router.get("/api/profile/{username}", response_model=PublicProfileResponse)
+@router.get("/api/profile/{username}")
 async def get_public_profile(
     username: str,
     db: AsyncSession = Depends(get_db),
-) -> PublicProfileResponse:
+) -> dict:
     """Return a user's public profile by username.
+
+    Returns the config JSON with ``username`` injected at the top level
+    so the frontend can access ``profile``, ``theme``, etc. directly.
 
     :param username: The username to look up.
     :param db: Database session.
-    :returns: The public profile.
+    :returns: The public profile with username.
     """
     result = await db.execute(select(User).where(User.username == username))
     user = result.scalar_one_or_none()
@@ -129,7 +132,7 @@ async def get_public_profile(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found")
 
     config = json.loads(profile.config_json) if profile.config_json else {}
-    return PublicProfileResponse(username=user.username, config=config)
+    return {"username": user.username, **config}
 
 
 @router.post("/api/config/validate", response_model=ValidationResponse)

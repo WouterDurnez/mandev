@@ -1,4 +1,6 @@
 ---
+import TypeWriter from './TypeWriter.tsx';
+
 interface NavItem {
   label: string;
   href: string;
@@ -13,19 +15,18 @@ interface Props {
 const { items, active, class: className = '' } = Astro.props;
 ---
 
-<nav class={`max-w-terminal mx-auto px-4 py-3 font-mono text-sm ${className}`}>
-  <div class="flex items-center gap-1 flex-wrap">
-    {items.map((item, i) => {
-      const isActive = active === item.label;
-      return (
+<header class={`floating-nav fixed top-0 left-0 right-0 z-50 border-b transition-all duration-300 ${className}`}>
+  <nav class="relative px-4 py-3 font-mono text-sm flex items-center justify-center">
+    <a href="/" class="text-terminal-dim hover:text-terminal-fg transition-colors duration-150 no-underline">
+      <span>$ </span><TypeWriter text="man dev" speed={80} loop client:load />
+    </a>
+    <div class="nav-links absolute right-4 flex items-center gap-1">
+      {items.map((item, i) => (
         <>
-          {i === 0 && (
-            <span class={isActive ? 'text-terminal-accent' : 'text-terminal-dim'}>&gt;</span>
-          )}
           <a
             href={item.href}
             class={`transition-colors duration-150 no-underline ${
-              isActive
+              active === item.label
                 ? 'text-terminal-accent'
                 : 'text-terminal-dim hover:text-terminal-fg'
             }`}
@@ -36,7 +37,7 @@ const { items, active, class: className = '' } = Astro.props;
             <span class="text-terminal-border">|</span>
           )}
         </>
-      );
-    })}
-  </div>
-</nav>
+      ))}
+    </div>
+  </nav>
+</header>

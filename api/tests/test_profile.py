@@ -85,7 +85,7 @@ async def test_get_public_profile(client: AsyncClient) -> None:
     assert resp.status_code == 200
     data = resp.json()
     assert data["username"] == "public_user"
-    assert data["config"]["profile"]["name"] == "Test User"
+    assert data["profile"]["name"] == "Test User"
 
 
 @pytest.mark.anyio

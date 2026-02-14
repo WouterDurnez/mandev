@@ -29,7 +29,7 @@ class TestProfile:
         assert p.name == "Ada"
         assert p.tagline is None
         assert p.about is None
-        assert p.avatar_url is None
+        assert p.avatar is None
 
     def test_full(self) -> None:
         """All fields populated."""
@@ -37,12 +37,12 @@ class TestProfile:
             name="Ada Lovelace",
             tagline="Analytical engine whisperer",
             about="Pioneering algorithms since 1843.",
-            avatar_url="https://example.com/avatar.png",
+            avatar="data:image/png;base64,iVBORw0KGgo=",
         )
         assert p.name == "Ada Lovelace"
         assert p.tagline == "Analytical engine whisperer"
         assert p.about == "Pioneering algorithms since 1843."
-        assert p.avatar_url == "https://example.com/avatar.png"
+        assert p.avatar == "data:image/png;base64,iVBORw0KGgo="
 
     def test_name_required(self) -> None:
         """Omitting *name* raises a validation error."""

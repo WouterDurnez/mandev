@@ -1,4 +1,5 @@
 import { clearToken } from '../lib/api';
+import TypeWriter from './TypeWriter';
 
 interface DashboardNavProps {
   /** Currently active tab. */
@@ -24,24 +25,25 @@ export default function DashboardNav({ active = 'editor' }: DashboardNavProps) {
     }`;
 
   return (
-    <nav
-      className="max-w-4xl mx-auto px-4 py-3 font-mono text-sm flex items-center gap-1"
-    >
-      <span
-        style={{ color: active === 'editor' ? 'var(--accent)' : 'var(--dim)' }}
-      >
-        &gt;
-      </span>
-      <a href="/dashboard" className={linkClass('editor')}>
-        editor
-      </a>
-      <span style={{ color: 'var(--border)' }}>|</span>
-      <button
-        onClick={handleLogout}
-        className="bg-transparent border-none font-mono text-sm cursor-pointer transition-colors duration-150 text-terminal-dim hover:text-terminal-fg p-0"
-      >
-        logout
-      </button>
-    </nav>
+    <header className="border-b" style={{ borderColor: 'var(--border)' }}>
+      <nav className="max-w-terminal mx-auto px-4 py-3 font-mono text-sm flex items-center gap-1 flex-wrap">
+        <a
+          href="/"
+          className="text-terminal-dim hover:text-terminal-fg transition-colors duration-150 no-underline mr-auto"
+        >
+          <span>$ </span><TypeWriter text="man dev" speed={80} loop />
+        </a>
+        <a href="/dashboard" className={linkClass('editor')}>
+          editor
+        </a>
+        <span style={{ color: 'var(--border)' }}>|</span>
+        <button
+          onClick={handleLogout}
+          className="bg-transparent border-none font-mono text-sm cursor-pointer transition-colors duration-150 text-terminal-dim hover:text-terminal-fg p-0"
+        >
+          logout
+        </button>
+      </nav>
+    </header>
   );
 }

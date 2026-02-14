@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import DashboardNav from './DashboardNav';
+import PixelAvatar from './PixelAvatar';
 import { apiGet, apiPut, getToken } from '../lib/api';
 
 /* ------------------------------------------------------------------ */
@@ -35,6 +36,7 @@ interface ProfileSection {
   name: string;
   tagline: string;
   about: string;
+  avatar: string;
 }
 
 interface ThemeSection {
@@ -150,7 +152,7 @@ const btnRemove: React.CSSProperties = {
 
 function emptyConfig(): Config {
   return {
-    profile: { name: '', tagline: '', about: '' },
+    profile: { name: '', tagline: '', about: '', avatar: '' },
     theme: { scheme: 'dracula', font: 'JetBrains Mono', mode: 'dark' },
     skills: [],
     projects: [],
@@ -195,6 +197,7 @@ export default function Editor() {
                 name: data.profile?.name || '',
                 tagline: data.profile?.tagline || '',
                 about: data.profile?.about || '',
+                avatar: data.profile?.avatar || '',
               },
               theme: {
                 scheme: data.theme?.scheme || 'dracula',
@@ -356,7 +359,7 @@ export default function Editor() {
     return (
       <div>
         <DashboardNav active="editor" />
-        <div className="max-w-4xl mx-auto px-4 py-16 text-terminal-dim font-mono text-sm">
+        <div className="max-w-terminal mx-auto px-4 py-16 text-terminal-dim font-mono text-sm">
           Loading...
         </div>
       </div>
@@ -367,7 +370,7 @@ export default function Editor() {
     <div>
       <DashboardNav active="editor" />
 
-      <div className="max-w-4xl mx-auto px-4 pb-16 font-mono text-sm space-y-8">
+      <div className="max-w-terminal mx-auto px-4 pb-16 font-mono text-sm space-y-8">
         <pre style={{ color: 'var(--dim)' }}>$ mandev edit</pre>
 
         {error && (
@@ -378,6 +381,14 @@ export default function Editor() {
         <section>
           <SectionHeader title="PROFILE" />
           <div className="pl-4 space-y-3">
+            <Field label="avatar">
+              <PixelAvatar
+                value={config.profile.avatar}
+                onChange={(dataUrl) => updateProfile('avatar', dataUrl)}
+                resolution={16}
+                size={128}
+              />
+            </Field>
             <Field label="name">
               <input
                 style={inputStyle}

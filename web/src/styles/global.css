@@ -106,6 +106,98 @@
    Base Styles
    ============================================================ */
 
+html {
+  scrollbar-gutter: stable;
+  scroll-behavior: smooth;
+  scroll-snap-type: y mandatory;
+}
+
+/* ============================================================
+   Scroll Sections & Reveal Animations
+   ============================================================ */
+
+.scroll-section {
+  min-height: 100svh;
+  display: flex;
+  align-items: center;
+  position: relative;
+  scroll-snap-align: start;
+}
+
+.scroll-section-alt {
+  background-color: color-mix(in srgb, var(--bg) 96%, var(--fg));
+}
+
+/* --- Hero entrance ---------------------------------------- */
+
+.hero-reveal {
+  opacity: 0;
+  transform: translateY(16px);
+  animation: heroIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.hero-reveal:nth-child(1) { animation-delay: 0.15s; }
+.hero-reveal:nth-child(2) { animation-delay: 0.4s; }
+.hero-reveal:nth-child(3) { animation-delay: 0.6s; }
+
+@keyframes heroIn {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- Scroll-triggered reveal ------------------------------ */
+
+.reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.in-view .reveal {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.in-view .reveal:nth-child(2) { transition-delay: 120ms; }
+.in-view .reveal:nth-child(3) { transition-delay: 240ms; }
+.in-view .reveal:nth-child(4) { transition-delay: 360ms; }
+.in-view .reveal:nth-child(5) { transition-delay: 480ms; }
+
+/* --- Scroll indicator ------------------------------------- */
+
+/* --- Floating nav ----------------------------------------- */
+
+.floating-nav {
+  background: transparent;
+  border-color: transparent;
+}
+
+.floating-nav:hover {
+  background-color: var(--bg);
+  border-color: var(--border);
+}
+
+.floating-nav .nav-links {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.floating-nav:hover .nav-links {
+  opacity: 1;
+}
+
+/* --- Scroll indicator ------------------------------------- */
+
+.scroll-indicator {
+  opacity: 0;
+  animation: scrollBounce 2s ease-in-out 1.8s infinite;
+}
+
+@keyframes scrollBounce {
+  0%, 100% { transform: translateY(0); opacity: 0.3; }
+  50% { transform: translateY(8px); opacity: 0.7; }
+}
+
 body {
   font-family: 'JetBrains Mono', 'Fira Code', 'Source Code Pro', monospace;
   background-color: var(--bg);

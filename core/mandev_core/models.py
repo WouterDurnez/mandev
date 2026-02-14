@@ -17,7 +17,7 @@ class Profile(BaseModel):
     name: str
     tagline: str | None = None
     about: str | None = None
-    avatar_url: str | None = None
+    avatar: str | None = None
 
 
 class Skill(BaseModel):
