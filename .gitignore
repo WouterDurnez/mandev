@@ -9,3 +9,5 @@ dist/
 node_modules/
 .astro/
 .DS_Store
+*.png
+.playwright-mcp/

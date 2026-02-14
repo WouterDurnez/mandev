@@ -27,14 +27,16 @@ Monorepo with four packages:
 - **Framework:** Astro with React islands (`client:load` for interactive components)
 - **Styling:** Tailwind CSS + CSS custom properties for theming
 - **Font:** JetBrains Mono (primary), plus 7 other mono fonts available
-- **Color schemes:** 10 terminal themes (Dracula default), defined as CSS variables in `global.css`
+- **Color schemes:** 10 terminal themes (Dracula default), each with dark + light variants, defined as CSS variables in `global.css`
+- **Light/dark mode:** `data-mode` attribute on `<html>`, persisted to `localStorage` (`mandev-mode`), respects `prefers-color-scheme`. Inline script in `<head>` prevents flash.
 - **Max content width:** `80ch` (`max-w-terminal` in Tailwind config)
 
 ### Key Components
 
 - `TypeWriter.tsx` — typing animation with loop mode; accepts `prefix` as static text (e.g., `$` is rendered outside the component)
+- `ModeToggle.tsx` — light/dark mode toggle (`--light`/`--dark` labels), hidden in floating nav until hover
 - `ThemeSwitcher.tsx` — interactive color scheme picker
-- `DiffToggle.tsx` — before/after toggle (generic bio vs man.dev profile)
+- `DiffToggle.tsx` — before/after comparison with overlapping rotated cards; click cards or buttons to swap
 - `PixelAvatar.tsx` — avatar upload with image preview
 - `TerminalNav.astro` — floating nav, logo centered, links reveal on hover (CSS class `floating-nav`)
 - `DashboardNav.tsx` — React equivalent for authenticated pages
@@ -43,7 +45,8 @@ Monorepo with four packages:
 ### Landing Page (`index.astro`)
 
 - Full-viewport scroll-snapping sections (`scroll-snap-type: y mandatory`)
-- Sections: Hero → Description → Synopsis → Examples → Options → Getting Started → Footer
+- Sections: Hero → Description → Synopsis → Examples (TOML) → Examples (Diff) → Options → Getting Started → Footer
+- Scroll indicator arrows (↓) on all sections except the last two; hero arrow is a clickable `<button>`
 - Hero uses `heroIn` keyframe animation on load
 - Other sections use Intersection Observer (`in-view` class) for scroll-triggered reveals
 - Alternating section backgrounds via `color-mix()` (`scroll-section-alt` class)
