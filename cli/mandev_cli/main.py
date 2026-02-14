@@ -227,3 +227,29 @@ def validate() -> None:
         raise typer.Exit(code=1)
 
     console.print("[green]Config is valid.[/green]")
+
+
+@app.command("export-json")
+def export_json(
+    output: Path | None = typer.Option(
+        None,
+        "--output",
+        "-o",
+        help="Write JSON to a file path. Prints to stdout when omitted.",
+    ),
+) -> None:
+    """Export the local config as canonical JSON."""
+    try:
+        config = load_config(Path.cwd())
+    except FileNotFoundError as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(code=1)
+
+    payload = json.dumps(config.model_dump(), indent=2)
+    if output is None:
+        console.print(payload)
+        return
+
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(payload + "\n")
+    console.print(f"[green]Exported config JSON to {output}[/green]")

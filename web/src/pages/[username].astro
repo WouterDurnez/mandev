@@ -229,6 +229,20 @@ const uname = (username || '').toUpperCase();
           return null;
         })}
 
+        <div>
+          <h2 class="text-terminal-accent text-xs uppercase tracking-widest mb-1">Output</h2>
+          <div class="pl-8 space-y-0.5">
+            <p>
+              <span class="text-terminal-dim">json:</span>{' '}
+              <a href={`/${username}.json`} class="text-terminal-accent hover:underline">/{username}.json</a>
+            </p>
+            <p>
+              <span class="text-terminal-dim">text:</span>{' '}
+              <a href={`/${username}.txt`} class="text-terminal-accent hover:underline">/{username}.txt</a>
+            </p>
+          </div>
+        </div>
+
         {/* Man page footer */}
         <pre class="text-terminal-dim text-xs mt-8">
 {`man.dev                    ${new Date().getFullYear()}                     ${uname}(7)`}
