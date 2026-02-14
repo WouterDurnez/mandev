@@ -370,7 +370,7 @@ export default function Editor() {
     <div>
       <DashboardNav active="editor" />
 
-      <div className="max-w-terminal mx-auto px-4 pb-16 font-mono text-sm space-y-8">
+      <div className="max-w-terminal mx-auto px-4 pt-8 pb-16 font-mono text-sm space-y-8">
         <pre style={{ color: 'var(--dim)' }}>$ mandev edit</pre>
 
         {error && (
@@ -385,8 +385,8 @@ export default function Editor() {
               <PixelAvatar
                 value={config.profile.avatar}
                 onChange={(dataUrl) => updateProfile('avatar', dataUrl)}
-                resolution={16}
-                size={128}
+                resolution={32}
+                size={96}
               />
             </Field>
             <Field label="name">

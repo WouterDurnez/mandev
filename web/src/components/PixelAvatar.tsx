@@ -140,12 +140,13 @@ export default function PixelAvatar({
                 border: '1px solid var(--border)',
                 color: 'var(--dim)',
                 fontFamily: 'inherit',
-                fontSize: '0.65rem',
-                padding: '0.2rem 0.4rem',
+                fontSize: '0.6rem',
+                padding: '0.15rem 0.2rem',
                 cursor: 'pointer',
+                whiteSpace: 'nowrap',
               }}
             >
-              [ CHANGE ]
+              [edit]
             </button>
             <button
               type="button"
@@ -156,12 +157,13 @@ export default function PixelAvatar({
                 border: '1px solid var(--border)',
                 color: 'var(--dim)',
                 fontFamily: 'inherit',
-                fontSize: '0.65rem',
-                padding: '0.2rem 0.4rem',
+                fontSize: '0.6rem',
+                padding: '0.15rem 0.2rem',
                 cursor: 'pointer',
+                whiteSpace: 'nowrap',
               }}
             >
-              [ REMOVE ]
+              [rm]
             </button>
           </>
         )}
