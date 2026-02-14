@@ -282,6 +282,21 @@ html {
   opacity: 1;
 }
 
+/* --- Avatar ---------------------------------------------- */
+
+.avatar-pixel {
+  image-rendering: pixelated;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  transition: image-rendering 0s, filter 0.3s ease;
+  filter: none;
+}
+
+.avatar-pixel:hover {
+  image-rendering: auto;
+  filter: blur(0.5px);
+}
+
 /* --- Scroll indicator ------------------------------------- */
 
 .scroll-indicator {
