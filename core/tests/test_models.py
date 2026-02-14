@@ -7,6 +7,7 @@ from pydantic import ValidationError
 
 from mandev_core.models import (
     Experience,
+    GitHub,
     Layout,
     Link,
     MandevConfig,
@@ -169,6 +170,41 @@ class TestLayout:
         assert lay.sections == ["bio", "links"]
 
 
+# --- GitHub ---
+
+
+class TestGitHub:
+    """Tests for the :class:`GitHub` model."""
+
+    def test_defaults(self) -> None:
+        """Only *username* is required; booleans default to True."""
+        gh = GitHub(username="testuser")
+        assert gh.username == "testuser"
+        assert gh.show_heatmap is True
+        assert gh.show_stats is True
+        assert gh.show_languages is True
+        assert gh.show_pinned is True
+
+    def test_overrides(self) -> None:
+        """All boolean flags can be turned off."""
+        gh = GitHub(
+            username="testuser",
+            show_heatmap=False,
+            show_stats=False,
+            show_languages=False,
+            show_pinned=False,
+        )
+        assert gh.show_heatmap is False
+        assert gh.show_stats is False
+        assert gh.show_languages is False
+        assert gh.show_pinned is False
+
+    def test_username_required(self) -> None:
+        """Omitting *username* raises a validation error."""
+        with pytest.raises(ValidationError):
+            GitHub()  # type: ignore[call-arg]
+
+
 # --- MandevConfig ---
 
 
@@ -222,3 +258,23 @@ class TestMandevConfig:
         assert len(cfg.projects) == 1
         assert len(cfg.experience) == 1
         assert len(cfg.links) == 1
+
+    def test_config_with_github_section(self) -> None:
+        """Config with a [github] section parses correctly."""
+        data = {
+            "profile": {"name": "Test"},
+            "github": {"username": "testuser"},
+        }
+        config = MandevConfig.model_validate(data)
+        assert config.github is not None
+        assert config.github.username == "testuser"
+        assert config.github.show_heatmap is True
+        assert config.github.show_stats is True
+        assert config.github.show_languages is True
+        assert config.github.show_pinned is True
+
+    def test_config_without_github_section(self) -> None:
+        """Config without [github] still works."""
+        data = {"profile": {"name": "Test"}}
+        config = MandevConfig.model_validate(data)
+        assert config.github is None

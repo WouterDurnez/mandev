@@ -75,6 +75,20 @@ class Layout(BaseModel):
     ]
 
 
+class GitHub(BaseModel):
+    """GitHub integration config.
+
+    Controls which GitHub stats sections appear on the public profile.
+    Only ``username`` is required; all display flags default to enabled.
+    """
+
+    username: str
+    show_heatmap: bool = True
+    show_stats: bool = True
+    show_languages: bool = True
+    show_pinned: bool = True
+
+
 class MandevConfig(BaseModel):
     """Root config model -- the single source of truth.
 
@@ -89,3 +103,4 @@ class MandevConfig(BaseModel):
     projects: list[Project] = []
     experience: list[Experience] = []
     links: list[Link] = []
+    github: GitHub | None = None
