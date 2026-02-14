@@ -28,14 +28,13 @@ export default function DashboardNav({ active = 'editor' }: DashboardNavProps) {
   return (
     <header className="border-b" style={{ borderColor: 'var(--border)' }}>
       <nav className="max-w-terminal mx-auto px-4 py-3 font-mono text-sm flex items-center gap-1 flex-wrap">
+        <ModeToggle />
         <a
           href="/"
           className="text-terminal-dim hover:text-terminal-fg transition-colors duration-150 no-underline mr-auto"
         >
           <span>$ </span><TypeWriter text="man dev" speed={80} loop />
         </a>
-        <ModeToggle />
-        <span style={{ color: 'var(--border)' }}>|</span>
         <a href="/dashboard" className={linkClass('editor')}>
           editor
         </a>
