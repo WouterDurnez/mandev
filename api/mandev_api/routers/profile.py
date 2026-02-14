@@ -8,8 +8,10 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from mandev_core import MandevConfig
+from mandev_api.config import settings
 from mandev_api.database import get_db
 from mandev_api.db_models import User, UserProfile
+from mandev_api.github_service import get_github_stats
 from mandev_api.routers.auth import _get_current_user
 
 router = APIRouter(tags=["profile"])
@@ -132,7 +134,21 @@ async def get_public_profile(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found")
 
     config = json.loads(profile.config_json) if profile.config_json else {}
-    return {"username": user.username, **config}
+    response = {"username": user.username, **config}
+
+    # Attach GitHub stats if configured
+    github_config = config.get("github")
+    if github_config and github_config.get("username"):
+        stats = await get_github_stats(
+            github_config["username"],
+            db=db,
+            token=settings.github_token,
+        )
+        response["github_stats"] = stats
+    else:
+        response["github_stats"] = None
+
+    return response
 
 
 @router.post("/api/config/validate", response_model=ValidationResponse)

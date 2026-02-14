@@ -113,3 +113,40 @@ async def test_validate_invalid_config(client: AsyncClient) -> None:
     data = resp.json()
     assert data["valid"] is False
     assert len(data["errors"]) > 0
+
+
+@pytest.mark.anyio
+async def test_public_profile_includes_github_stats_key(client: AsyncClient) -> None:
+    """GET /api/profile/{username} includes github_stats key."""
+    token = await _signup_and_login(client, "gh_user")
+    config_with_github = {
+        **VALID_CONFIG,
+        "github": {"username": "gh-test"},
+    }
+    await client.put(
+        "/api/profile",
+        json=config_with_github,
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    resp = await client.get("/api/profile/gh_user")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "github" in data
+    assert "github_stats" in data
+
+
+@pytest.mark.anyio
+async def test_public_profile_without_github_has_null_stats(client: AsyncClient) -> None:
+    """GET /api/profile/{username} has github_stats=null when no github config."""
+    token = await _signup_and_login(client, "no_gh_user")
+    await client.put(
+        "/api/profile",
+        json=VALID_CONFIG,
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    resp = await client.get("/api/profile/no_gh_user")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["github_stats"] is None
