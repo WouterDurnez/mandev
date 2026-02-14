@@ -7,6 +7,7 @@ on every run. Uses the ORM directly -- no HTTP calls required.
 import asyncio
 import json
 import sys
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 # ---------------------------------------------------------------------------
@@ -21,7 +22,7 @@ from sqlalchemy import select  # noqa: E402
 
 from mandev_api.auth import hash_password  # noqa: E402
 from mandev_api.database import Base, SessionLocal, engine  # noqa: E402
-from mandev_api.db_models import User, UserProfile  # noqa: E402
+from mandev_api.db_models import GitHubStatsCache, User, UserProfile  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Seed data
@@ -209,6 +210,99 @@ SEED_USERS = [
 SEED_USERNAMES = [u["username"] for u in SEED_USERS]
 
 
+def _fake_contributions(seed: int, activity_level: float = 0.7) -> list[dict]:
+    """Generate 365 days of fake contribution data.
+
+    :param seed: Seed for reproducible randomness.
+    :param activity_level: Probability of having contributions on a given day.
+    :returns: List of ``{date, count}`` dicts.
+    """
+    days: list[dict] = []
+    base = date(2025, 2, 15)
+    for i in range(365):
+        d = base + timedelta(days=i)
+        # Simple hash-based deterministic "random"
+        h = hash((seed, d.isoformat())) % 100
+        if h < activity_level * 100:
+            count = (h % 7) + 1  # 1-7 contributions
+        else:
+            count = 0
+        days.append({"date": d.isoformat(), "count": count})
+    return days
+
+
+SEED_GITHUB_STATS: dict[str, dict] = {
+    "alice-example": {
+        "total_stars": 1247,
+        "total_repos": 38,
+        "followers": 892,
+        "total_contributions": 1653,
+        "current_streak": 12,
+        "longest_streak": 47,
+        "languages": [
+            {"name": "Python", "percentage": 52.3},
+            {"name": "Go", "percentage": 28.1},
+            {"name": "Shell", "percentage": 8.4},
+            {"name": "Dockerfile", "percentage": 5.2},
+            {"name": "SQL", "percentage": 3.8},
+            {"name": "Other", "percentage": 2.2},
+        ],
+        "pinned_repos": [
+            {"name": "streamline", "stars": 342, "forks": 45, "language": "Go"},
+            {"name": "dbmigrate", "stars": 567, "forks": 89, "language": "Python"},
+            {"name": "loadtest", "stars": 178, "forks": 23, "language": "Python"},
+        ],
+        "contributions": _fake_contributions(seed=42, activity_level=0.7),
+    },
+    "bob-example": {
+        "total_stars": 823,
+        "total_repos": 24,
+        "followers": 1456,
+        "total_contributions": 987,
+        "current_streak": 5,
+        "longest_streak": 31,
+        "languages": [
+            {"name": "TypeScript", "percentage": 48.7},
+            {"name": "CSS", "percentage": 22.3},
+            {"name": "JavaScript", "percentage": 15.1},
+            {"name": "HTML", "percentage": 8.9},
+            {"name": "MDX", "percentage": 5.0},
+        ],
+        "pinned_repos": [
+            {"name": "motion-kit", "stars": 612, "forks": 78, "language": "TypeScript"},
+            {"name": "a11y-audit", "stars": 211, "forks": 34, "language": "TypeScript"},
+        ],
+        "contributions": _fake_contributions(seed=99, activity_level=0.55),
+    },
+    "dave-example": {
+        "total_stars": 3421,
+        "total_repos": 67,
+        "followers": 2103,
+        "total_contributions": 2847,
+        "current_streak": 34,
+        "longest_streak": 92,
+        "languages": [
+            {"name": "Python", "percentage": 35.2},
+            {"name": "Rust", "percentage": 25.8},
+            {"name": "TypeScript", "percentage": 18.4},
+            {"name": "C", "percentage": 12.1},
+            {"name": "Zig", "percentage": 5.3},
+            {"name": "Shell", "percentage": 3.2},
+        ],
+        "pinned_repos": [
+            {"name": "fastparse", "stars": 1234, "forks": 167, "language": "Rust"},
+            {"name": "cli-forge", "stars": 876, "forks": 112, "language": "Python"},
+            {"name": "dotenv-vault", "stars": 543, "forks": 67, "language": "Python"},
+            {"name": "bench-it", "stars": 432, "forks": 34, "language": "Rust"},
+            {"name": "type-guard", "stars": 336, "forks": 28, "language": "Python"},
+        ],
+        "contributions": _fake_contributions(seed=7, activity_level=0.85),
+    },
+}
+
+_SEED_GITHUB_USERNAMES = list(SEED_GITHUB_STATS.keys())
+
+
 async def seed() -> None:
     """Clear existing seed users and re-insert all seed profiles."""
     async with engine.begin() as conn:
@@ -247,9 +341,32 @@ async def seed() -> None:
             )
             session.add(profile)
 
+        # Delete existing GitHub stats cache entries for seed users
+        stats_result = await session.execute(
+            select(GitHubStatsCache).where(
+                GitHubStatsCache.github_username.in_(_SEED_GITHUB_USERNAMES)
+            )
+        )
+        for cache_entry in stats_result.scalars().all():
+            await session.delete(cache_entry)
+        await session.flush()
+
+        # Insert fake GitHub stats
+        now = datetime.now(timezone.utc)
+        for github_username, stats in SEED_GITHUB_STATS.items():
+            cache = GitHubStatsCache(
+                github_username=github_username,
+                stats_json=json.dumps(stats),
+                fetched_at=now,
+            )
+            session.add(cache)
+
         await session.commit()
 
     print(f"Seeded {len(SEED_USERS)} users: {', '.join(SEED_USERNAMES)}")
+    print(
+        f"Seeded GitHub stats for: {', '.join(_SEED_GITHUB_USERNAMES)}"
+    )
 
 
 if __name__ == "__main__":
