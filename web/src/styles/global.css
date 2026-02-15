@@ -284,17 +284,30 @@ html {
 
 /* --- Avatar ---------------------------------------------- */
 
-.avatar-pixel {
-  image-rendering: pixelated;
+.avatar-pixel-wrap {
+  width: 96px;
+  height: 96px;
   border: 1px solid var(--border);
   border-radius: 2px;
-  transition: image-rendering 0s, filter 0.3s ease;
-  filter: none;
+  overflow: hidden;
+  position: relative;
 }
 
-.avatar-pixel:hover {
+.avatar-pixel-wrap img {
+  /* Render image at tiny size, then scale up with pixelated interpolation */
+  width: 24px;
+  height: 24px;
+  image-rendering: pixelated;
+  transform: scale(4);
+  transform-origin: top left;
+  transition: all 0.3s ease;
+}
+
+.avatar-pixel-wrap:hover img {
+  width: 96px;
+  height: 96px;
   image-rendering: auto;
-  filter: blur(0.5px);
+  transform: scale(1);
 }
 
 /* --- Scroll indicator ------------------------------------- */

@@ -192,6 +192,9 @@ export default function Editor() {
         if (res.ok) {
           const data = await res.json();
           if (data && data.profile) {
+            const scheme = data.theme?.scheme || 'dracula';
+            const font = data.theme?.font || 'JetBrains Mono';
+            const mode = data.theme?.mode || 'dark';
             setConfig({
               profile: {
                 name: data.profile?.name || '',
@@ -199,11 +202,7 @@ export default function Editor() {
                 about: data.profile?.about || '',
                 avatar: data.profile?.avatar || '',
               },
-              theme: {
-                scheme: data.theme?.scheme || 'dracula',
-                font: data.theme?.font || 'JetBrains Mono',
-                mode: data.theme?.mode || 'dark',
-              },
+              theme: { scheme, font, mode },
               skills: data.skills || [],
               projects: data.projects || [],
               experience: data.experience || [],
@@ -212,6 +211,13 @@ export default function Editor() {
                 sections: ['bio', 'skills', 'projects', 'experience', 'links'],
               },
             });
+
+            // Apply the user's saved theme to the page
+            const html = document.documentElement;
+            html.setAttribute('data-scheme', scheme);
+            html.setAttribute('data-mode', mode);
+            localStorage.setItem('mandev-mode', mode);
+            html.style.fontFamily = `'${font}', monospace`;
           }
         } else if (res.status === 401) {
           window.location.href = '/login';
@@ -261,6 +267,17 @@ export default function Editor() {
       ...c,
       theme: { ...c.theme, [field]: value },
     }));
+
+    // Live preview: apply theme changes to the document immediately
+    const html = document.documentElement;
+    if (field === 'scheme') {
+      html.setAttribute('data-scheme', value);
+    } else if (field === 'mode') {
+      html.setAttribute('data-mode', value);
+      localStorage.setItem('mandev-mode', value);
+    } else if (field === 'font') {
+      html.style.fontFamily = `'${value}', monospace`;
+    }
   }
 
   function updateSkill(index: number, field: keyof Skill, value: string) {
@@ -370,7 +387,7 @@ export default function Editor() {
     <div>
       <DashboardNav active="editor" />
 
-      <div className="max-w-terminal mx-auto px-4 pt-8 pb-16 font-mono text-sm space-y-8">
+      <div className="max-w-terminal mx-auto px-4 pt-16 pb-16 font-mono text-sm space-y-8">
         <pre style={{ color: 'var(--dim)' }}>$ mandev edit</pre>
 
         {error && (

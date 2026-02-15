@@ -187,13 +187,10 @@ const uname = (username || '').toUpperCase();
             return (
               <div>
                 {profile.avatar && (
-                  <div class="mb-4">
+                  <div class="mb-4 avatar-pixel-wrap">
                     <img
                       src={profile.avatar}
                       alt={`${profile.name} avatar`}
-                      width="96"
-                      height="96"
-                      class="avatar-pixel"
                     />
                   </div>
                 )}

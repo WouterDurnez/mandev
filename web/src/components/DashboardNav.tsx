@@ -26,9 +26,9 @@ export default function DashboardNav({ active = 'editor' }: DashboardNavProps) {
     }`;
 
   return (
-    <header className="border-b" style={{ borderColor: 'var(--border)' }}>
-      <nav className="relative px-4 py-3 font-mono text-sm flex items-center justify-center max-w-terminal mx-auto">
-        <div className="absolute left-4 flex items-center gap-1">
+    <header className="floating-nav fixed top-0 left-0 right-0 z-50 border-b transition-all duration-300">
+      <nav className="relative px-4 py-3 font-mono text-sm flex items-center justify-center">
+        <div className="nav-links absolute left-4 flex items-center gap-1">
           <ModeToggle />
         </div>
         <a
@@ -37,11 +37,11 @@ export default function DashboardNav({ active = 'editor' }: DashboardNavProps) {
         >
           <span>$ </span><TypeWriter text="man dev" speed={80} loop />
         </a>
-        <div className="absolute right-4 flex items-center gap-1">
+        <div className="nav-links absolute right-4 flex items-center gap-1">
           <a href="/dashboard" className={linkClass('editor')}>
             editor
           </a>
-          <span style={{ color: 'var(--border)' }}>|</span>
+          <span className="text-terminal-border">|</span>
           <button
             onClick={handleLogout}
             className="bg-transparent border-none font-mono text-sm cursor-pointer transition-colors duration-150 text-terminal-dim hover:text-terminal-fg p-0"

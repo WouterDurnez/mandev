@@ -1,9 +1,9 @@
 import { useState, useRef, useCallback } from 'react';
 
 interface PixelAvatarProps {
-  /** Current avatar data URL (base64 pixelated image). */
+  /** Current avatar data URL. */
   value?: string;
-  /** Called with the pixelated image as a data URL. */
+  /** Called with the avatar image as a data URL. */
   onChange?: (dataUrl: string) => void;
   /** Pixel grid size — lower means more pixelated. */
   resolution?: number;
@@ -14,26 +14,38 @@ interface PixelAvatarProps {
 /**
  * Retro-styled pixel avatar uploader.
  *
- * Accepts an image file, downscales it to a tiny resolution on a canvas,
- * then scales it back up with nearest-neighbor interpolation for a
- * chunky pixel-art look.
+ * Stores the original image (resized to a reasonable resolution) via onChange.
+ * Displays a pixelated preview by default; reveals the original on hover.
  */
 export default function PixelAvatar({
   value,
   onChange,
   resolution = 32,
-  size = 128,
+  size = 96,
 }: PixelAvatarProps) {
-  const [preview, setPreview] = useState<string | undefined>(value);
+  const [original, setOriginal] = useState<string | undefined>(value);
+  const [pixelated, setPixelated] = useState<string | undefined>(value);
+  const [hovering, setHovering] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const pixelate = useCallback(
+  const processImage = useCallback(
     (file: File) => {
       const reader = new FileReader();
       reader.onload = () => {
         const img = new Image();
         img.onload = () => {
-          // Downscale to tiny resolution
+          // Create original at display size (good quality for hover reveal)
+          const orig = document.createElement('canvas');
+          orig.width = size;
+          orig.height = size;
+          const oCtx = orig.getContext('2d');
+          if (!oCtx) return;
+          oCtx.imageSmoothingEnabled = true;
+          oCtx.imageSmoothingQuality = 'high';
+          oCtx.drawImage(img, 0, 0, size, size);
+          const origUrl = orig.toDataURL('image/png');
+
+          // Create pixelated version: downscale then upscale with nearest-neighbor
           const small = document.createElement('canvas');
           small.width = resolution;
           small.height = resolution;
@@ -42,7 +54,6 @@ export default function PixelAvatar({
           sCtx.imageSmoothingEnabled = true;
           sCtx.drawImage(img, 0, 0, resolution, resolution);
 
-          // Scale back up with nearest-neighbor
           const big = document.createElement('canvas');
           big.width = size;
           big.height = size;
@@ -50,10 +61,11 @@ export default function PixelAvatar({
           if (!bCtx) return;
           bCtx.imageSmoothingEnabled = false;
           bCtx.drawImage(small, 0, 0, size, size);
+          const pixUrl = big.toDataURL('image/png');
 
-          const dataUrl = big.toDataURL('image/png');
-          setPreview(dataUrl);
-          onChange?.(dataUrl);
+          setOriginal(origUrl);
+          setPixelated(pixUrl);
+          onChange?.(origUrl);
         };
         img.src = reader.result as string;
       };
@@ -68,33 +80,43 @@ export default function PixelAvatar({
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
-    if (file) pixelate(file);
+    if (file) processImage(file);
   }
 
   function handleRemove() {
-    setPreview(undefined);
+    setOriginal(undefined);
+    setPixelated(undefined);
+    setHovering(false);
     onChange?.('');
     if (inputRef.current) inputRef.current.value = '';
   }
 
+  const displaySrc = hovering && original ? original : pixelated;
+
   return (
     <div style={{ display: 'inline-flex', flexDirection: 'column', gap: '0.5rem' }}>
-      {preview ? (
+      {displaySrc ? (
         <div
           style={{
             width: size,
             height: size,
             border: '1px solid var(--border)',
             overflow: 'hidden',
-            imageRendering: 'pixelated',
+            cursor: 'pointer',
           }}
+          onMouseEnter={() => setHovering(true)}
+          onMouseLeave={() => setHovering(false)}
         >
           <img
-            src={preview}
+            src={displaySrc}
             alt="avatar"
             width={size}
             height={size}
-            style={{ imageRendering: 'pixelated', display: 'block' }}
+            style={{
+              display: 'block',
+              transition: 'filter 0.3s ease',
+              filter: hovering ? 'none' : 'none',
+            }}
           />
         </div>
       ) : (
@@ -129,7 +151,7 @@ export default function PixelAvatar({
       )}
 
       <div style={{ display: 'flex', gap: '0.25rem', width: size }}>
-        {preview && (
+        {displaySrc && (
           <>
             <button
               type="button"
