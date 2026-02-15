@@ -6,6 +6,7 @@ validate developer profiles.
 
 from __future__ import annotations
 
+import difflib
 import json
 import re
 from pathlib import Path
@@ -254,6 +255,60 @@ def export_json(
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(payload + "\n")
     console.print(f"[green]Exported config JSON to {output}[/green]")
+
+
+
+
+@app.command()
+def diff() -> None:
+    """Show a unified diff between remote and local profile config."""
+    token = _read_token()
+
+    try:
+        local_config = load_config(Path.cwd()).model_dump()
+    except FileNotFoundError as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(code=1)
+
+    response = httpx.get(
+        f"{API_BASE_URL}/api/profile",
+        headers=_auth_header(token),
+    )
+    if response.status_code != 200:
+        console.print("[red]Failed to fetch remote profile.[/red]")
+        raise typer.Exit(code=1)
+
+    try:
+        remote_config = MandevConfig.model_validate(response.json()).model_dump()
+    except PydanticValidationError:
+        console.print("[red]Remote profile is invalid and cannot be diffed.[/red]")
+        raise typer.Exit(code=1)
+
+    remote_lines = json.dumps(remote_config, indent=2, sort_keys=True).splitlines()
+    local_lines = json.dumps(local_config, indent=2, sort_keys=True).splitlines()
+
+    unified = list(
+        difflib.unified_diff(
+            remote_lines,
+            local_lines,
+            fromfile='remote',
+            tofile='local',
+            lineterm='',
+        )
+    )
+
+    if not unified:
+        console.print('[green]No differences between local and remote profile.[/green]')
+        return
+
+    console.print('[yellow]Differences found:[/yellow]')
+    for line in unified:
+        if line.startswith('+') and not line.startswith('+++'):
+            console.print(f"[green]{line}[/green]")
+        elif line.startswith('-') and not line.startswith('---'):
+            console.print(f"[red]{line}[/red]")
+        else:
+            console.print(line)
 
 
 @app.command()
