@@ -37,19 +37,34 @@ Monorepo with four packages:
 - `ModeToggle.tsx` — light/dark mode toggle (`--light`/`--dark` labels), hidden in floating nav until hover
 - `ThemeSwitcher.tsx` — interactive color scheme picker
 - `DiffToggle.tsx` — before/after comparison with overlapping rotated cards; click cards or buttons to swap
-- `PixelAvatar.tsx` — avatar upload with image preview
+- `PixelAvatar.tsx` — avatar upload; stores original image via `onChange`, displays pixelated version by default, reveals original on hover. CSS pixelation on profile page via `.avatar-pixel-wrap` (24px render, scale(4) with `image-rendering: pixelated`)
 - `TerminalNav.astro` — floating nav, logo centered, links reveal on hover (CSS class `floating-nav`)
-- `DashboardNav.tsx` — React equivalent for authenticated pages
-- `Editor.tsx` — TOML config editor on the dashboard
+- `DashboardNav.tsx` — React equivalent for authenticated pages; uses same `floating-nav` pattern as TerminalNav
+- `Editor.tsx` — config editor on the dashboard; live-previews scheme/font/mode changes by updating `data-scheme`, `data-mode`, and `fontFamily` on `<html>`
 
 ### Landing Page (`index.astro`)
 
 - Full-viewport scroll-snapping sections (`scroll-snap-type: y mandatory`)
-- Sections: Hero → Description → Synopsis → Examples (TOML) → Examples (Diff) → Options → Getting Started → Footer
-- Scroll indicator arrows (↓) on all sections except the last two; hero arrow is a clickable `<button>`
+- Sections: Hero → Description → Getting Started → Examples (TOML) → Examples (Diff) → Options → Footer
+- Scroll indicator arrows (↓) on sections before Options; hero arrow is a clickable `<button>`
 - Hero uses `heroIn` keyframe animation on load
 - Other sections use Intersection Observer (`in-view` class) for scroll-triggered reveals
 - Alternating section backgrounds via `color-mix()` (`scroll-section-alt` class)
+
+### Multi-Format Profile Output
+
+- `[username].json` — raw JSON profile data
+- `[username].txt` — plain text or ANSI-colored man page (content negotiation via `User-Agent`; `?plain` forces plain text)
+- `[username].svg` — embeddable SVG card (600x300, theme-aware via `schemes.ts`)
+- `web/src/lib/ansi.ts` — ANSI escape code helpers, `isCLI()` user-agent detection
+- `web/src/lib/schemes.ts` — color scheme map mirroring CSS variables for SVG generation
+
+### Seed Data
+
+- `scripts/seed.py` — seeds 6 users (alice, bob, carol, dave, eve, wouter) with profiles, GitHub stats, identicon avatars
+- All demo passwords: `seed` (except wouter: `darksoul`)
+- Pure Python identicon generator (no Pillow dependency)
+- GitHub heatmap dates are relative to today (`date.today() - timedelta(days=364)`)
 
 ## Python
 

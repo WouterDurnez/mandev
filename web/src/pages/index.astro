@@ -54,17 +54,26 @@ const navItems = [
       <div class="scroll-indicator absolute bottom-10 left-1/2 -translate-x-1/2 text-terminal-dim text-xs select-none tracking-widest">↓</div>
     </section>
 
-    <!-- ═══════════════ SYNOPSIS ═══════════════ -->
+    <!-- ═══════════════ GETTING STARTED ═══════════════ -->
     <section class="scroll-section">
       <div class="max-w-terminal mx-auto px-4 w-full">
-        <h2 class="reveal text-terminal-accent text-xs uppercase tracking-widest mb-6">Synopsis</h2>
+        <h2 class="reveal text-terminal-accent text-xs uppercase tracking-widest mb-4">Getting Started</h2>
         <div class="reveal pl-6 text-sm space-y-1">
-          <p class="text-terminal-fg text-base">mandev init</p>
-          <p class="text-terminal-dim pl-6"># creates .mandev.toml in your project</p>
+          <p><span class="text-terminal-accent">$</span> <span class="text-terminal-fg">pip install mandev</span></p>
+          <p><span class="text-terminal-accent">$</span> <span class="text-terminal-fg">mandev init</span></p>
+          <p class="text-terminal-dim pl-6"># edit .mandev.toml</p>
+          <p><span class="text-terminal-accent">$</span> <span class="text-terminal-fg">mandev push</span></p>
+          <p class="text-terminal-dim pl-6"># live at you.man.dev</p>
         </div>
-        <div class="reveal pl-6 text-sm space-y-1 mt-4">
-          <p class="text-terminal-fg text-base">mandev push</p>
-          <p class="text-terminal-dim pl-6"># deploys to you.man.dev</p>
+        <div class="reveal pl-6 text-sm space-y-1 mt-8">
+          <p class="text-terminal-dim"><span class="text-terminal-fg">Config as code</span> &mdash; your identity in a TOML file. <span class="text-terminal-fg">git diff</span> your career.</p>
+          <p class="text-terminal-dim"><span class="text-terminal-fg">One command</span> &mdash; push from your terminal. No CMS. No drag-and-drop.</p>
+          <p class="text-terminal-dim"><span class="text-terminal-fg">Your aesthetic</span> &mdash; 10 schemes, 8 fonts. Looks like your terminal.</p>
+          <p class="text-terminal-dim"><span class="text-terminal-fg">Linkable</span> &mdash; README, PR bio, conference CFPs, Slack status.</p>
+        </div>
+        <div class="reveal pl-6 mt-10">
+          <p class="text-terminal-dim text-sm mb-4">Or sign up in the browser:</p>
+          <TerminalButton href="/signup" variant="primary">SIGN UP</TerminalButton>
         </div>
       </div>
       <div class="scroll-indicator absolute bottom-10 left-1/2 -translate-x-1/2 text-terminal-dim text-xs select-none tracking-widest">↓</div>
@@ -103,7 +112,7 @@ scheme = "dracula"`}</pre>
     </section>
 
     <!-- ═══════════════ OPTIONS ═══════════════ -->
-    <section class="scroll-section">
+    <section class="scroll-section scroll-section-alt">
       <div class="max-w-terminal mx-auto px-4 w-full">
         <h2 class="reveal text-terminal-accent text-xs uppercase tracking-widest mb-4">Options</h2>
         <div class="reveal pl-6 text-sm">
@@ -115,31 +124,6 @@ scheme = "dracula"`}</pre>
           <p class="text-terminal-fg">--font=&lt;name&gt;</p>
           <p class="text-terminal-dim pl-6">JetBrains Mono, Fira Code, IBM Plex Mono, Inconsolata,
              Source Code Pro, Victor Mono, Cascadia Code, Hack</p>
-        </div>
-      </div>
-      <div class="scroll-indicator absolute bottom-10 left-1/2 -translate-x-1/2 text-terminal-dim text-xs select-none tracking-widest">↓</div>
-    </section>
-
-    <!-- ═══════════════ GETTING STARTED ═══════════════ -->
-    <section class="scroll-section scroll-section-alt">
-      <div class="max-w-terminal mx-auto px-4 w-full">
-        <h2 class="reveal text-terminal-accent text-xs uppercase tracking-widest mb-4">Getting Started</h2>
-        <div class="reveal pl-6 text-sm space-y-1">
-          <p class="text-terminal-dim"><span class="text-terminal-fg">Config as code</span> &mdash; your identity in a TOML file. <span class="text-terminal-fg">git diff</span> your career.</p>
-          <p class="text-terminal-dim"><span class="text-terminal-fg">One command</span> &mdash; push from your terminal. No CMS. No drag-and-drop.</p>
-          <p class="text-terminal-dim"><span class="text-terminal-fg">Your aesthetic</span> &mdash; 10 schemes, 8 fonts. Looks like your terminal.</p>
-          <p class="text-terminal-dim"><span class="text-terminal-fg">Linkable</span> &mdash; README, PR bio, conference CFPs, Slack status.</p>
-        </div>
-        <div class="reveal pl-6 text-sm space-y-1 mt-10">
-          <p><span class="text-terminal-accent">$</span> <span class="text-terminal-fg">pip install mandev</span></p>
-          <p><span class="text-terminal-accent">$</span> <span class="text-terminal-fg">mandev init</span></p>
-          <p class="text-terminal-dim pl-6"># edit .mandev.toml</p>
-          <p><span class="text-terminal-accent">$</span> <span class="text-terminal-fg">mandev push</span></p>
-          <p class="text-terminal-dim pl-6"># live at you.man.dev</p>
-        </div>
-        <div class="reveal pl-6 mt-10">
-          <p class="text-terminal-dim text-sm mb-4">Or sign up in the browser:</p>
-          <TerminalButton href="/signup" variant="primary">SIGN UP</TerminalButton>
         </div>
       </div>
     </section>
