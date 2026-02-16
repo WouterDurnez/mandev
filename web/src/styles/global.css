@@ -202,6 +202,11 @@ html {
   scrollbar-gutter: stable;
   scroll-behavior: smooth;
   scroll-snap-type: y mandatory;
+  overflow-x: hidden;
+}
+
+pre {
+  overflow-x: auto;
 }
 
 /* ============================================================

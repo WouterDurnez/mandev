@@ -21,7 +21,11 @@ const navItems = [
     <!-- ═══════════════ HERO: NAME ═══════════════ -->
     <section class="scroll-section">
       <div class="max-w-terminal mx-auto px-4 w-full">
-        <pre class="hero-reveal text-terminal-dim text-xs leading-relaxed select-none mb-12">{`MAN.DEV(1)            Developer Identity            MAN.DEV(1)`}</pre>
+        <div class="hero-reveal text-terminal-dim text-xs leading-relaxed select-none mb-12 flex justify-between">
+          <span>MAN.DEV(1)</span>
+          <span>Developer Identity</span>
+          <span class="hidden sm:inline">MAN.DEV(1)</span>
+        </div>
         <h2 class="hero-reveal text-terminal-accent text-xs uppercase tracking-widest mb-2">Name</h2>
         <p class="hero-reveal pl-6">
           <span class="text-terminal-fg font-bold text-lg">man.dev</span>
@@ -137,7 +141,18 @@ scheme = "dracula"`}</pre>
           <span class="text-terminal-dim">(1)</span>
         </p>
       </div>
-      <pre class="text-terminal-dim text-xs select-none mt-8">{`man.dev                        2026                        MAN.DEV(1)`}</pre>
+      <div class="pl-6 text-sm mt-4">
+        <p class="text-terminal-dim">
+          made by <a href="https://ko-fi.com/rugvin" target="_blank" rel="noopener noreferrer" class="text-terminal-accent hover:underline">haai</a>
+          <span class="text-terminal-dim mx-1">&middot;</span>
+          <a href="https://ko-fi.com/rugvin" target="_blank" rel="noopener noreferrer" class="text-terminal-dim hover:text-terminal-accent transition-colors duration-150" title="Support on Ko-fi">&#9749;</a>
+        </p>
+      </div>
+      <div class="text-terminal-dim text-xs select-none mt-8 flex justify-between">
+        <span>man.dev</span>
+        <span>2026</span>
+        <span class="hidden sm:inline">MAN.DEV(1)</span>
+      </div>
     </section>
 
   </main>
