@@ -5,9 +5,13 @@ interface Props {
   title: string;
   scheme?: string;
   font?: string;
+  ogTitle?: string;
+  ogDescription?: string;
+  ogImage?: string;
+  ogUrl?: string;
 }
 
-const { title, scheme = 'dracula', font = 'JetBrains Mono' } = Astro.props;
+const { title, scheme = 'dracula', font = 'JetBrains Mono', ogTitle, ogDescription, ogImage, ogUrl } = Astro.props;
 ---
 
 <!doctype html>
@@ -16,7 +20,16 @@ const { title, scheme = 'dracula', font = 'JetBrains Mono' } = Astro.props;
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title} — man.dev</title>
-    <meta name="description" content="man.dev — your developer identity, version controlled." />
+    <meta name="description" content={ogDescription || "man.dev — your developer identity, version controlled."} />
+    {ogTitle && <meta property="og:type" content="profile" />}
+    {ogTitle && <meta property="og:title" content={ogTitle} />}
+    {ogDescription && <meta property="og:description" content={ogDescription} />}
+    {ogImage && <meta property="og:image" content={ogImage} />}
+    {ogUrl && <meta property="og:url" content={ogUrl} />}
+    {ogTitle && <meta name="twitter:card" content="summary_large_image" />}
+    {ogTitle && <meta name="twitter:title" content={ogTitle} />}
+    {ogDescription && <meta name="twitter:description" content={ogDescription} />}
+    {ogImage && <meta name="twitter:image" content={ogImage} />}
     <style set:html={`body { font-family: '${font}', monospace; }`} />
     <link rel="icon" href="/favicon.svg" />
     <script is:inline>
