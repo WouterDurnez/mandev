@@ -95,6 +95,7 @@ interface ProfileData {
   links?: Link[];
   github?: GitHubConfig;
   github_stats?: GitHubStatsData | null;
+  github_verified?: boolean;
 }
 
 let profileData: ProfileData | null = null;
@@ -303,7 +304,14 @@ const uname = (username || '').toUpperCase();
           <div>
             {githubConfig?.show_stats !== false && (
               <div>
-                <h2 class="text-terminal-accent text-xs uppercase tracking-widest mb-1">GitHub</h2>
+                <h2 class="text-terminal-accent text-xs uppercase tracking-widest mb-1">
+                  GitHub
+                  {profileData.github_verified && (
+                    <span class="ml-2" style="font-size: 0.65rem; border: 1px solid var(--accent); padding: 1px 6px; vertical-align: middle;">
+                      verified
+                    </span>
+                  )}
+                </h2>
                 <div class="pl-8">
                   <p>
                     <span class="text-terminal-dim">Stars: </span><span class="text-terminal-fg">{githubStats.total_stars.toLocaleString()}</span>
@@ -322,7 +330,14 @@ const uname = (username || '').toUpperCase();
             {githubConfig?.show_heatmap !== false && githubStats.contributions.length > 0 && (
               <div class={githubConfig?.show_stats !== false ? 'mt-4' : ''}>
                 {githubConfig?.show_stats === false && (
-                  <h2 class="text-terminal-accent text-xs uppercase tracking-widest mb-1">GitHub</h2>
+                  <h2 class="text-terminal-accent text-xs uppercase tracking-widest mb-1">
+                    GitHub
+                    {profileData.github_verified && (
+                      <span class="ml-2" style="font-size: 0.65rem; border: 1px solid var(--accent); padding: 1px 6px; vertical-align: middle;">
+                        verified
+                      </span>
+                    )}
+                  </h2>
                 )}
                 <div class="pl-8 mt-2" style="overflow-x: auto;">
                   <div style="display: inline-block; position: relative;">
