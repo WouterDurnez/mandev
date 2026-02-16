@@ -59,3 +59,17 @@ class GitHubStatsCache(Base):
         DateTime(timezone=True),
         server_default=func.now(),
     )
+
+
+class ProfileView(Base):
+    """Daily aggregated profile view counts."""
+
+    __tablename__ = "profile_views"
+    __table_args__ = (
+        Index("ix_profile_views_username_date", "username", "date", unique=True),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    username: Mapped[str] = mapped_column(String(63), index=True)
+    date: Mapped[str] = mapped_column(String(10))  # YYYY-MM-DD
+    count: Mapped[int] = mapped_column(default=0)
