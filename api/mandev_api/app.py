@@ -42,8 +42,10 @@ def create_app() -> FastAPI:
     # Import and register routers
     from mandev_api.routers.auth import router as auth_router
     from mandev_api.routers.profile import router as profile_router
+    from mandev_api.routers.github_oauth import router as github_oauth_router
 
     app.include_router(auth_router)
     app.include_router(profile_router)
+    app.include_router(github_oauth_router)
 
     return app
