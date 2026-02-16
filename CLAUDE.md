@@ -51,6 +51,13 @@ Monorepo with four packages:
 - Other sections use Intersection Observer (`in-view` class) for scroll-triggered reveals
 - Alternating section backgrounds via `color-mix()` (`scroll-section-alt` class)
 
+### Social Proof Features
+
+- **GitHub OAuth Verification:** Users link GitHub via OAuth (`/api/auth/github` → callback → store `github_username` + `github_token` on User model). Profile shows `[verified]` badge when OAuth username matches config `github.username`. Editor has link/unlink UI.
+- **Open Graph Social Cards:** Profile pages include OG + Twitter Card meta tags. `[username].png` endpoint converts SVG card to PNG via `@resvg/resvg-js`.
+- **Profile View Counter:** Daily-aggregated `profile_views` table (username + date composite). Bot user-agents are skipped. Total count shown near man page footer.
+- **Env vars:** `MANDEV_GITHUB_OAUTH_CLIENT_ID`, `MANDEV_GITHUB_OAUTH_CLIENT_SECRET` (optional, enables OAuth flow)
+
 ### Multi-Format Profile Output
 
 - `[username].json` — raw JSON profile data
