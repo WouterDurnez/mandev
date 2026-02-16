@@ -1,22 +1,22 @@
 """FastAPI application factory."""
 
-from contextlib import asynccontextmanager
 from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
-from mandev_api.database import engine, Base
+from piccolo.engine import engine_finder
 
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
-    """Create database tables on startup."""
-    import mandev_api.db_models  # noqa: F401 — ensure models are registered
-
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    """Start and stop the Piccolo connection pool."""
+    engine = engine_finder()
+    if hasattr(engine, "start_connection_pool"):
+        await engine.start_connection_pool()
     yield
+    if hasattr(engine, "close_connection_pool"):
+        await engine.close_connection_pool()
 
 
 def create_app() -> FastAPI:

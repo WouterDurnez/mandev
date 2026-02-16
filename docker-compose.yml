@@ -15,7 +15,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      MANDEV_DATABASE_URL: postgresql+asyncpg://mandev:mandev@db/mandev
+      MANDEV_DB_HOST: db
       MANDEV_SECRET_KEY: dev-secret-change-me
     depends_on:
       - db
