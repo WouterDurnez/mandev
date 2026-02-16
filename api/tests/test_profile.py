@@ -137,6 +137,26 @@ async def test_public_profile_includes_github_stats_key(client: AsyncClient) -> 
 
 
 @pytest.mark.anyio
+async def test_public_profile_github_verified_false_by_default(client: AsyncClient) -> None:
+    """GET /api/profile/{username} has github_verified=false by default."""
+    token = await _signup_and_login(client, "verify_user")
+    config_with_github = {
+        **VALID_CONFIG,
+        "github": {"username": "some-gh-user"},
+    }
+    await client.put(
+        "/api/profile",
+        json=config_with_github,
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    resp = await client.get("/api/profile/verify_user")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["github_verified"] is False
+
+
+@pytest.mark.anyio
 async def test_public_profile_without_github_has_null_stats(client: AsyncClient) -> None:
     """GET /api/profile/{username} has github_stats=null when no github config."""
     token = await _signup_and_login(client, "no_gh_user")

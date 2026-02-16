@@ -136,13 +136,22 @@ async def get_public_profile(
     config = json.loads(profile.config_json) if profile.config_json else {}
     response = {"username": user.username, **config}
 
+    # Compute github_verified
+    config_gh_username = (config.get("github") or {}).get("username", "")
+    response["github_verified"] = bool(
+        user.github_username
+        and config_gh_username
+        and user.github_username.lower() == config_gh_username.lower()
+    )
+
     # Attach GitHub stats if configured
     github_config = config.get("github")
     if github_config and github_config.get("username"):
+        token = user.github_token or settings.github_token
         stats = await get_github_stats(
             github_config["username"],
             db=db,
-            token=settings.github_token,
+            token=token,
         )
         response["github_stats"] = stats
     else:
