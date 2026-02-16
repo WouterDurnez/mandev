@@ -52,6 +52,7 @@ class MeResponse(BaseModel):
     id: int
     email: str
     username: str
+    github_username: str | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -151,4 +152,9 @@ async def me(user: User = Depends(_get_current_user)) -> MeResponse:
     :param user: The authenticated user (injected).
     :returns: User info.
     """
-    return MeResponse(id=user.id, email=user.email, username=user.username)
+    return MeResponse(
+        id=user.id,
+        email=user.email,
+        username=user.username,
+        github_username=user.github_username,
+    )
