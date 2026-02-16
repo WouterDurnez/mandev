@@ -12,3 +12,5 @@ node_modules/
 *.png
 .playwright-mcp/
 .worktrees/
+.claude/
+docs/plans/
