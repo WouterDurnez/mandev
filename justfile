@@ -1,5 +1,11 @@
 # man.dev task runner
 
+# Start everything (API + DB + frontend)
+start:
+    -lsof -ti :8000 | xargs kill 2>/dev/null
+    -lsof -ti :4321 | xargs kill 2>/dev/null
+    just dev & just web & wait
+
 # Start API + DB
 dev:
     docker compose up -d db
