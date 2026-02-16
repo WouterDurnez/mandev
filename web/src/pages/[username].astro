@@ -96,6 +96,7 @@ interface ProfileData {
   github?: GitHubConfig;
   github_stats?: GitHubStatsData | null;
   github_verified?: boolean;
+  view_count?: number;
 }
 
 let profileData: ProfileData | null = null;
@@ -437,6 +438,12 @@ const uname = (username || '').toUpperCase();
             </p>
           </div>
         </div>
+
+        {profileData.view_count != null && profileData.view_count > 0 && (
+          <p class="text-terminal-dim text-xs mt-4">
+            viewed {profileData.view_count.toLocaleString()} times
+          </p>
+        )}
 
         {/* Man page footer */}
         <pre class="text-terminal-dim text-xs mt-8">
