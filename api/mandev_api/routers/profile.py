@@ -1,20 +1,27 @@
 """Profile and config-validation routes."""
 
 import json
+from datetime import date
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, ValidationError
-from sqlalchemy import select
+from sqlalchemy import func as sa_func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from mandev_core import MandevConfig
 from mandev_api.config import settings
 from mandev_api.database import get_db
-from mandev_api.db_models import User, UserProfile
+from mandev_api.db_models import User, UserProfile, ProfileView
 from mandev_api.github_service import get_github_stats
 from mandev_api.routers.auth import _get_current_user
 
 router = APIRouter(tags=["profile"])
+
+BOT_PATTERNS = (
+    "bot", "crawl", "spider", "slurp", "mediapartners",
+    "facebookexternalhit", "twitterbot", "linkedinbot",
+    "slackbot", "discordbot", "whatsapp", "telegrambot",
+)
 
 
 # ---------------------------------------------------------------------------
@@ -110,6 +117,7 @@ async def put_own_profile(
 @router.get("/api/profile/{username}")
 async def get_public_profile(
     username: str,
+    request: Request,
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Return a user's public profile by username.
@@ -156,6 +164,32 @@ async def get_public_profile(
         response["github_stats"] = stats
     else:
         response["github_stats"] = None
+
+    # Increment view count (skip bots)
+    ua = (request.headers.get("user-agent") or "").lower()
+    is_bot = any(pattern in ua for pattern in BOT_PATTERNS)
+    if not is_bot:
+        today = date.today().isoformat()
+        result = await db.execute(
+            select(ProfileView).where(
+                ProfileView.username == username,
+                ProfileView.date == today,
+            )
+        )
+        view = result.scalar_one_or_none()
+        if view is None:
+            view = ProfileView(username=username, date=today, count=1)
+            db.add(view)
+        else:
+            view.count += 1
+        await db.commit()
+
+    # Total view count
+    result = await db.execute(
+        select(sa_func.sum(ProfileView.count)).where(ProfileView.username == username)
+    )
+    total_views = result.scalar() or 0
+    response["view_count"] = total_views
 
     return response
 
