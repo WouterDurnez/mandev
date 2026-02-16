@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import DashboardNav from './DashboardNav';
 import PixelAvatar from './PixelAvatar';
-import { apiGet, apiPut, getToken } from '../lib/api';
+import { apiGet, apiPost, apiPut, getToken } from '../lib/api';
 
 /* ------------------------------------------------------------------ */
 /*  Type definitions matching the API config schema                    */
@@ -84,6 +84,8 @@ const FONTS = [
 ];
 
 const LEVELS: Skill['level'][] = ['beginner', 'intermediate', 'advanced', 'expert'];
+
+const API_URL = import.meta.env.PUBLIC_API_URL || 'http://localhost:8000';
 
 /* ------------------------------------------------------------------ */
 /*  Shared inline styles (terminal aesthetic)                          */
@@ -178,6 +180,7 @@ export default function Editor() {
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [githubUsername, setGithubUsername] = useState<string | null>(null);
 
   /* ---- Mount: auth check + fetch profile ---- */
   useEffect(() => {
@@ -228,6 +231,15 @@ export default function Editor() {
         setError('Failed to load profile');
       })
       .finally(() => setLoading(false));
+
+    apiGet('/api/auth/me', token)
+      .then(async (res) => {
+        if (res.ok) {
+          const me = await res.json();
+          setGithubUsername(me.github_username || null);
+        }
+      })
+      .catch(() => {});
   }, []);
 
   /* ---- Save handler ---- */
@@ -255,6 +267,15 @@ export default function Editor() {
   }
 
   /* ---- Helpers for updating nested state ---- */
+  async function handleGithubUnlink() {
+    const token = getToken();
+    if (!token) return;
+    const res = await apiPost('/api/auth/github/unlink', {}, token);
+    if (res.ok) {
+      setGithubUsername(null);
+    }
+  }
+
   function updateProfile(field: keyof ProfileSection, value: string) {
     setConfig((c) => ({
       ...c,
@@ -469,6 +490,39 @@ export default function Editor() {
                 <option value="light">light</option>
               </select>
             </Field>
+          </div>
+        </section>
+
+        {/* ===== GitHub Section ===== */}
+        <section>
+          <SectionHeader title="GITHUB" />
+          <div className="pl-4 space-y-3">
+            {githubUsername ? (
+              <div className="flex items-center gap-3">
+                <span style={{ color: 'var(--fg)' }}>
+                  Connected as <span style={{ color: 'var(--accent)' }}>@{githubUsername}</span>
+                </span>
+                <button style={btnGhost} onClick={handleGithubUnlink}>
+                  [ UNLINK ]
+                </button>
+              </div>
+            ) : (
+              <div>
+                <p style={{ color: 'var(--dim)' }} className="mb-2">
+                  Link your GitHub account to get a verified badge on your profile.
+                </p>
+                <a
+                  href={`${API_URL}/api/auth/github`}
+                  style={{
+                    ...btnPrimary,
+                    textDecoration: 'none',
+                    display: 'inline-block',
+                  }}
+                >
+                  [ LINK GITHUB ]
+                </a>
+              </div>
+            )}
           </div>
         </section>
 
