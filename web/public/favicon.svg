@@ -1,4 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
   <rect width="32" height="32" rx="6" fill="#282a36" />
-  <text x="4" y="22" font-family="JetBrains Mono, Fira Code, monospace" font-size="15" font-weight="700" fill="#bd93f9">$ █</text>
+  <text x="4" y="22" font-family="JetBrains Mono, Fira Code, monospace" font-size="15" font-weight="700" fill="#bd93f9">$</text>
+  <text x="16" y="22" font-family="JetBrains Mono, Fira Code, monospace" font-size="15" font-weight="700" fill="#bd93f9">█</text>
 </svg>
