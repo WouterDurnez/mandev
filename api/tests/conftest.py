@@ -1,51 +1,54 @@
 """Shared test fixtures for the API test suite."""
 
+import os
+import tempfile
 from collections.abc import AsyncGenerator
 
 import pytest
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from piccolo.engine.sqlite import SQLiteEngine
+from piccolo.table import create_db_tables, drop_db_tables
 
-from mandev_api.database import Base, get_db
+from mandev_api.tables import User, UserProfile, GitHubStatsCache, ProfileView
 
-# Ensure ORM models are registered on Base.metadata before create_all.
-import mandev_api.db_models  # noqa: F401
+ALL_TABLES = [User, UserProfile, GitHubStatsCache, ProfileView]
 
 
 @pytest.fixture(params=["asyncio"])
 def anyio_backend(request: pytest.FixtureRequest) -> str:
-    """Override anyio backend to only use asyncio (SQLAlchemy async requires it)."""
+    """Override anyio backend to only use asyncio."""
     return request.param
 
 
 @pytest.fixture
 async def client() -> AsyncGenerator[AsyncClient]:
-    """Yield an async HTTP client backed by an in-memory SQLite database.
+    """Yield an async HTTP client backed by a temporary SQLite database.
 
-    Creates all tables before the test and tears them down afterward.
-    The ``get_db`` dependency is overridden so the app uses the test
-    database.
+    Overrides the Piccolo engine on each table to use a temp-file SQLite
+    database, creates all tables, and tears them down afterward.
     """
-    engine = create_async_engine("sqlite+aiosqlite://", echo=False)
-    test_session = async_sessionmaker(engine, expire_on_commit=False)
+    db_fd, db_path = tempfile.mkstemp(suffix=".db")
+    os.close(db_fd)
 
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    engine = SQLiteEngine(path=db_path)
+    original_engines = {}
 
-    async def _override_get_db() -> AsyncGenerator[AsyncSession]:
-        async with test_session() as session:
-            yield session
+    for table in ALL_TABLES:
+        original_engines[table] = table._meta._db
+        table._meta._db = engine
 
-    # Import app factory *after* engine setup to avoid import-time side-effects
-    from mandev_api.app import create_app
+    try:
+        await create_db_tables(*ALL_TABLES, if_not_exists=True)
 
-    app = create_app()
-    app.dependency_overrides[get_db] = _override_get_db
+        from mandev_api.app import create_app
 
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as ac:
-        yield ac
+        app = create_app()
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as ac:
+            yield ac
 
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
-    await engine.dispose()
+        await drop_db_tables(*ALL_TABLES)
+    finally:
+        for table in ALL_TABLES:
+            table._meta._db = original_engines[table]
+        os.unlink(db_path)

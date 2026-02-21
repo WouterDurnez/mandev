@@ -1,21 +1,16 @@
-"""Database engine, session, and base model."""
+"""Database helpers.
 
-from collections.abc import AsyncGenerator
+Piccolo tables query themselves directly via the global engine
+configured in ``piccolo_conf.py``, so no session dependency is needed.
+This module provides transaction helpers if required.
+"""
 
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-from sqlalchemy.orm import DeclarativeBase
-
-from mandev_api.config import settings
-
-engine = create_async_engine(settings.database_url)
-SessionLocal = async_sessionmaker(engine, expire_on_commit=False)
+from piccolo.engine import engine_finder
 
 
-class Base(DeclarativeBase):
-    """Base class for all SQLAlchemy models."""
+async def get_engine():
+    """Return the current Piccolo engine instance.
 
-
-async def get_db() -> AsyncGenerator[AsyncSession]:
-    """Yield a database session, closing it when done."""
-    async with SessionLocal() as session:
-        yield session
+    :returns: The active database engine.
+    """
+    return engine_finder()

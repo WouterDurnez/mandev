@@ -13,13 +13,15 @@ Monorepo with four packages:
 | Package | Stack | Purpose |
 |---------|-------|---------|
 | `core/` | Python (Pydantic) | Shared models and validation |
-| `api/` | Python (FastAPI) | REST API, SQLite database |
+| `api/` | Python (FastAPI + Piccolo ORM) | REST API, PostgreSQL database |
 | `cli/` | Python (Click) | `mandev init` / `mandev push` CLI |
 | `web/` | Astro + React + Tailwind | Landing page, dashboard, public profiles |
 
 - **Package management:** `uv` (Python), `npm` (web)
 - **Task runner:** `justfile`
-- **Database:** SQLite (`mandev.db`)
+- **ORM:** Piccolo ORM with built-in migrations (`just migrate`, `just migration "desc"`)
+- **Database:** PostgreSQL via Docker (`docker compose up -d db`), SQLite for tests
+- **DB config:** `api/piccolo_conf.py` reads `MANDEV_DB_*` env vars (defaults match docker-compose.yml)
 - **Docker:** `docker-compose.yml` + `Dockerfile` for local dev
 
 ## Web Frontend

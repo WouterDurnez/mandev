@@ -6,11 +6,9 @@ import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from mandev_api.config import settings
-from mandev_api.database import get_db
-from mandev_api.db_models import User
+from mandev_api.tables import User
 from mandev_api.routers.auth import _get_current_user
 
 router = APIRouter(prefix="/api/auth/github", tags=["github-oauth"])
@@ -52,13 +50,11 @@ async def github_redirect() -> RedirectResponse:
 async def github_callback(
     code: str = Query(None),
     user: User = Depends(_get_current_user),
-    db: AsyncSession = Depends(get_db),
 ) -> RedirectResponse:
     """Exchange GitHub authorization code for access token and store username.
 
     :param code: The authorization code from GitHub.
     :param user: The authenticated user.
-    :param db: Database session.
     :returns: Redirect to the dashboard.
     """
     if not code:
@@ -108,7 +104,7 @@ async def github_callback(
 
     user.github_username = github_login
     user.github_token = access_token
-    await db.commit()
+    await user.save().run()
 
     return RedirectResponse(
         url="/dashboard",
@@ -119,15 +115,13 @@ async def github_callback(
 @router.post("/unlink", response_model=GitHubLinkResponse)
 async def github_unlink(
     user: User = Depends(_get_current_user),
-    db: AsyncSession = Depends(get_db),
 ) -> GitHubLinkResponse:
     """Remove the linked GitHub account from the user.
 
     :param user: The authenticated user.
-    :param db: Database session.
     :returns: Confirmation with null github_username.
     """
     user.github_username = None
     user.github_token = None
-    await db.commit()
+    await user.save().run()
     return GitHubLinkResponse(github_username=None)

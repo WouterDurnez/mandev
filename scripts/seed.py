@@ -6,7 +6,6 @@ on every run. Uses the ORM directly -- no HTTP calls required.
 
 import asyncio
 import base64
-import io
 import json
 import struct
 import sys
@@ -22,11 +21,10 @@ _repo_root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_repo_root / "api"))
 sys.path.insert(0, str(_repo_root / "core"))
 
-from sqlalchemy import select  # noqa: E402
+from piccolo.columns import Where  # noqa: E402
 
 from mandev_api.auth import hash_password  # noqa: E402
-from mandev_api.database import Base, SessionLocal, engine  # noqa: E402
-from mandev_api.db_models import GitHubStatsCache, User, UserProfile  # noqa: E402
+from mandev_api.tables import GitHubStatsCache, User, UserProfile  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Avatar generation (pure Python PNG identicons)
@@ -403,64 +401,49 @@ _SEED_GITHUB_USERNAMES = list(SEED_GITHUB_STATS.keys())
 
 
 async def seed() -> None:
-    """Clear existing seed users and re-insert all seed profiles."""
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    """Clear existing seed users and re-insert all seed profiles.
 
-    async with SessionLocal() as session:
-        # Delete existing seed users and their profiles
-        result = await session.execute(
-            select(User).where(User.username.in_(SEED_USERNAMES))
+    Assumes migrations have already been run.
+    """
+    # Delete existing seed users' profiles, then the users themselves
+    existing_users = (
+        await User.objects()
+        .where(Where(User.username.is_in(SEED_USERNAMES)))
+        .run()
+    )
+    for user in existing_users:
+        await UserProfile.delete().where(UserProfile.user_id == user.id).run()
+    await User.delete().where(Where(User.username.is_in(SEED_USERNAMES))).run()
+
+    # Insert fresh seed data
+    for entry in SEED_USERS:
+        user = User(
+            username=entry["username"],
+            email=entry["email"],
+            password_hash=hash_password(entry["password"]),
         )
-        existing = result.scalars().all()
-        for user in existing:
-            # Delete profile first (no FK cascade configured)
-            profile_result = await session.execute(
-                select(UserProfile).where(UserProfile.user_id == user.id)
-            )
-            existing_profile = profile_result.scalar_one_or_none()
-            if existing_profile:
-                await session.delete(existing_profile)
-            await session.delete(user)
-        await session.flush()
+        await user.save().run()
 
-        # Insert fresh seed data
-        for entry in SEED_USERS:
-            user = User(
-                username=entry["username"],
-                email=entry["email"],
-                password_hash=hash_password(entry["password"]),
-            )
-            session.add(user)
-            await session.flush()  # populate user.id
-
-            profile = UserProfile(
-                user_id=user.id,
-                config_json=json.dumps(entry["config"]),
-            )
-            session.add(profile)
-
-        # Delete existing GitHub stats cache entries for seed users
-        stats_result = await session.execute(
-            select(GitHubStatsCache).where(
-                GitHubStatsCache.github_username.in_(_SEED_GITHUB_USERNAMES)
-            )
+        profile = UserProfile(
+            user_id=user.id,
+            config_json=json.dumps(entry["config"]),
         )
-        for cache_entry in stats_result.scalars().all():
-            await session.delete(cache_entry)
-        await session.flush()
+        await profile.save().run()
 
-        # Insert fake GitHub stats
-        now = datetime.now(timezone.utc)
-        for github_username, stats in SEED_GITHUB_STATS.items():
-            cache = GitHubStatsCache(
-                github_username=github_username,
-                stats_json=json.dumps(stats),
-                fetched_at=now,
-            )
-            session.add(cache)
+    # Delete existing GitHub stats cache entries for seed users
+    await GitHubStatsCache.delete().where(
+        Where(GitHubStatsCache.github_username.is_in(_SEED_GITHUB_USERNAMES))
+    ).run()
 
-        await session.commit()
+    # Insert fake GitHub stats
+    now = datetime.now(timezone.utc)
+    for github_username, stats in SEED_GITHUB_STATS.items():
+        cache = GitHubStatsCache(
+            github_username=github_username,
+            stats_json=json.dumps(stats),
+            fetched_at=now,
+        )
+        await cache.save().run()
 
     print(f"Seeded {len(SEED_USERS)} users: {', '.join(SEED_USERNAMES)}")
     print(

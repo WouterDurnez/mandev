@@ -2,12 +2,9 @@
 
 from fastapi import APIRouter, Depends, Header, HTTPException, status
 from pydantic import BaseModel, EmailStr
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from mandev_api.auth import create_access_token, decode_access_token, hash_password, verify_password
-from mandev_api.database import get_db
-from mandev_api.db_models import User, UserProfile
+from mandev_api.tables import User, UserProfile
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -61,12 +58,10 @@ class MeResponse(BaseModel):
 
 async def _get_current_user(
     authorization: str = Header(...),
-    db: AsyncSession = Depends(get_db),
 ) -> User:
     """Extract and validate the JWT from the Authorization header.
 
     :param authorization: ``Bearer <token>`` header value.
-    :param db: Database session.
     :returns: The authenticated :class:`User`.
     :raises HTTPException: 401 if the token is missing, malformed, or invalid.
     """
@@ -82,8 +77,7 @@ async def _get_current_user(
     if user_id is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
 
-    result = await db.execute(select(User).where(User.id == int(user_id)))
-    user = result.scalar_one_or_none()
+    user = await User.objects().where(User.id == int(user_id)).first().run()
     if user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
     return user
@@ -94,21 +88,18 @@ async def _get_current_user(
 # ---------------------------------------------------------------------------
 
 @router.post("/signup", response_model=SignupResponse, status_code=status.HTTP_201_CREATED)
-async def signup(body: SignupRequest, db: AsyncSession = Depends(get_db)) -> SignupResponse:
+async def signup(body: SignupRequest) -> SignupResponse:
     """Register a new user and create an empty profile.
 
     :param body: Signup data.
-    :param db: Database session.
     :returns: The created user info.
     """
-    # Check duplicate email
-    existing = await db.execute(select(User).where(User.email == body.email))
-    if existing.scalar_one_or_none() is not None:
+    existing = await User.objects().where(User.email == body.email).first().run()
+    if existing is not None:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered")
 
-    # Check duplicate username
-    existing = await db.execute(select(User).where(User.username == body.username))
-    if existing.scalar_one_or_none() is not None:
+    existing = await User.objects().where(User.username == body.username).first().run()
+    if existing is not None:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Username already taken")
 
     user = User(
@@ -116,27 +107,22 @@ async def signup(body: SignupRequest, db: AsyncSession = Depends(get_db)) -> Sig
         username=body.username,
         password_hash=hash_password(body.password),
     )
-    db.add(user)
-    await db.flush()
+    await user.save().run()
 
     profile = UserProfile(user_id=user.id, config_json="{}")
-    db.add(profile)
-    await db.commit()
-    await db.refresh(user)
+    await profile.save().run()
 
     return SignupResponse(id=user.id, email=user.email, username=user.username)
 
 
 @router.post("/login", response_model=TokenResponse)
-async def login(body: LoginRequest, db: AsyncSession = Depends(get_db)) -> TokenResponse:
+async def login(body: LoginRequest) -> TokenResponse:
     """Authenticate a user and return a JWT.
 
     :param body: Login credentials.
-    :param db: Database session.
     :returns: An access token.
     """
-    result = await db.execute(select(User).where(User.email == body.email))
-    user = result.scalar_one_or_none()
+    user = await User.objects().where(User.email == body.email).first().run()
 
     if user is None or not verify_password(body.password, user.password_hash):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")

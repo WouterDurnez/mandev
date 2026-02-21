@@ -1,17 +1,15 @@
 """Profile and config-validation routes."""
 
 import json
-from datetime import date
+from datetime import date, datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, ValidationError
-from sqlalchemy import func as sa_func, select
-from sqlalchemy.ext.asyncio import AsyncSession
+from piccolo.query.functions import Sum
 
 from mandev_core import MandevConfig
 from mandev_api.config import settings
-from mandev_api.database import get_db
-from mandev_api.db_models import User, UserProfile, ProfileView
+from mandev_api.tables import User, UserProfile, ProfileView
 from mandev_api.github_service import get_github_stats
 from mandev_api.routers.auth import _get_current_user
 
@@ -59,18 +57,18 @@ class ValidationResponse(BaseModel):
 @router.get("/api/profile")
 async def get_own_profile(
     user: User = Depends(_get_current_user),
-    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Return the authenticated user's profile config.
 
     :param user: The authenticated user.
-    :param db: Database session.
     :returns: The stored config JSON (or empty dict).
     """
-    result = await db.execute(
-        select(UserProfile).where(UserProfile.user_id == user.id),
+    profile = (
+        await UserProfile.objects()
+        .where(UserProfile.user_id == user.id)
+        .first()
+        .run()
     )
-    profile = result.scalar_one_or_none()
     if profile is None or profile.config_json in ("", "{}"):
         return {}
     return json.loads(profile.config_json)
@@ -80,7 +78,6 @@ async def get_own_profile(
 async def put_own_profile(
     body: dict,
     user: User = Depends(_get_current_user),
-    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Update the authenticated user's profile config.
 
@@ -88,7 +85,6 @@ async def put_own_profile(
 
     :param body: The config data.
     :param user: The authenticated user.
-    :param db: Database session.
     :returns: The stored config.
     """
     try:
@@ -99,18 +95,19 @@ async def put_own_profile(
             detail=exc.errors(),
         )
 
-    result = await db.execute(
-        select(UserProfile).where(UserProfile.user_id == user.id),
+    profile = (
+        await UserProfile.objects()
+        .where(UserProfile.user_id == user.id)
+        .first()
+        .run()
     )
-    profile = result.scalar_one_or_none()
     if profile is None:
         profile = UserProfile(user_id=user.id, config_json=json.dumps(body))
-        db.add(profile)
     else:
         profile.config_json = json.dumps(body)
 
-    await db.commit()
-    await db.refresh(profile)
+    profile.updated_at = datetime.now(timezone.utc)
+    await profile.save().run()
     return json.loads(profile.config_json)
 
 
@@ -118,7 +115,6 @@ async def put_own_profile(
 async def get_public_profile(
     username: str,
     request: Request,
-    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Return a user's public profile by username.
 
@@ -126,18 +122,19 @@ async def get_public_profile(
     so the frontend can access ``profile``, ``theme``, etc. directly.
 
     :param username: The username to look up.
-    :param db: Database session.
+    :param request: The incoming request (for user-agent detection).
     :returns: The public profile with username.
     """
-    result = await db.execute(select(User).where(User.username == username))
-    user = result.scalar_one_or_none()
+    user = await User.objects().where(User.username == username).first().run()
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
-    result = await db.execute(
-        select(UserProfile).where(UserProfile.user_id == user.id),
+    profile = (
+        await UserProfile.objects()
+        .where(UserProfile.user_id == user.id)
+        .first()
+        .run()
     )
-    profile = result.scalar_one_or_none()
     if profile is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found")
 
@@ -158,7 +155,6 @@ async def get_public_profile(
         token = user.github_token or settings.github_token
         stats = await get_github_stats(
             github_config["username"],
-            db=db,
             token=token,
         )
         response["github_stats"] = stats
@@ -170,25 +166,25 @@ async def get_public_profile(
     is_bot = any(pattern in ua for pattern in BOT_PATTERNS)
     if not is_bot:
         today = date.today().isoformat()
-        result = await db.execute(
-            select(ProfileView).where(
-                ProfileView.username == username,
-                ProfileView.date == today,
-            )
+        view = (
+            await ProfileView.objects()
+            .where(ProfileView.username == username, ProfileView.date == today)
+            .first()
+            .run()
         )
-        view = result.scalar_one_or_none()
         if view is None:
             view = ProfileView(username=username, date=today, count=1)
-            db.add(view)
         else:
             view.count += 1
-        await db.commit()
+        await view.save().run()
 
     # Total view count
-    result = await db.execute(
-        select(sa_func.sum(ProfileView.count)).where(ProfileView.username == username)
+    result = (
+        await ProfileView.select(Sum(ProfileView.count))
+        .where(ProfileView.username == username)
+        .run()
     )
-    total_views = result.scalar() or 0
+    total_views = result[0]["sum"] if result and result[0].get("sum") is not None else 0
     response["view_count"] = total_views
 
     return response

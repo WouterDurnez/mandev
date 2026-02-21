@@ -7,9 +7,8 @@ dependencies = [
     "mandev-core",
     "fastapi>=0.115",
     "uvicorn[standard]>=0.34",
-    "sqlalchemy[asyncio]>=2.0",
+    "piccolo[postgres]>=1.0",
     "asyncpg>=0.30",
-    "aiosqlite>=0.20",
     "bcrypt>=4.0",
     "python-jose[cryptography]>=3.3",
     "pydantic-settings>=2.0",
@@ -26,7 +25,7 @@ dev = [
     "pytest>=8.0",
     "anyio>=4.0",
     "httpx>=0.28",
-    "aiosqlite>=0.20",
+    "piccolo[sqlite]>=1.0",
 ]
 
 [tool.hatch.build.targets.wheel]
