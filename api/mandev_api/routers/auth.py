@@ -3,6 +3,8 @@
 from fastapi import APIRouter, Depends, Header, HTTPException, status
 from pydantic import BaseModel, EmailStr
 
+import json
+
 from mandev_api.auth import create_access_token, decode_access_token, hash_password, verify_password
 from mandev_api.tables import User, UserProfile
 
@@ -50,6 +52,7 @@ class MeResponse(BaseModel):
     email: str
     username: str
     github_username: str | None = None
+    avatar: str | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -138,9 +141,24 @@ async def me(user: User = Depends(_get_current_user)) -> MeResponse:
     :param user: The authenticated user (injected).
     :returns: User info.
     """
+    avatar: str | None = None
+    profile = (
+        await UserProfile.objects()
+        .where(UserProfile.user_id == user.id)
+        .first()
+        .run()
+    )
+    if profile and profile.config_json:
+        try:
+            config = json.loads(profile.config_json)
+            avatar = (config.get("profile") or {}).get("avatar")
+        except (json.JSONDecodeError, AttributeError):
+            pass
+
     return MeResponse(
         id=user.id,
         email=user.email,
         username=user.username,
         github_username=user.github_username,
+        avatar=avatar,
     )

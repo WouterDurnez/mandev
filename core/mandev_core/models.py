@@ -25,6 +25,7 @@ class Skill(BaseModel):
 
     name: str
     level: Literal["beginner", "intermediate", "advanced", "expert"]
+    domain: str | None = None
 
 
 class Project(BaseModel):
@@ -89,6 +90,64 @@ class GitHub(BaseModel):
     show_pinned: bool = True
 
 
+class Npm(BaseModel):
+    """npm integration config.
+
+    :param username: npm registry username.
+    :param show_packages: Whether to display the package list.
+    :param show_downloads: Whether to display download counts.
+    :param max_packages: Maximum number of packages to show.
+    """
+
+    username: str
+    show_packages: bool = True
+    show_downloads: bool = True
+    max_packages: int = 10
+
+
+class PyPI(BaseModel):
+    """PyPI integration config.
+
+    Uses an explicit package list because PyPI has no per-user API.
+
+    :param packages: List of package names to display.
+    :param show_downloads: Whether to display download counts.
+    :param max_packages: Maximum number of packages to show.
+    """
+
+    packages: list[str]
+    show_downloads: bool = True
+    max_packages: int = 10
+
+
+class DevTo(BaseModel):
+    """Dev.to integration config.
+
+    :param username: Dev.to username.
+    :param show_articles: Whether to display articles.
+    :param show_stats: Whether to display aggregate stats.
+    :param max_articles: Maximum number of articles to show.
+    """
+
+    username: str
+    show_articles: bool = True
+    show_stats: bool = True
+    max_articles: int = 5
+
+
+class Hashnode(BaseModel):
+    """Hashnode integration config.
+
+    :param username: Hashnode username (blog host).
+    :param show_articles: Whether to display articles.
+    :param max_articles: Maximum number of articles to show.
+    """
+
+    username: str
+    show_articles: bool = True
+    max_articles: int = 5
+
+
 class MandevConfig(BaseModel):
     """Root config model -- the single source of truth.
 
@@ -104,3 +163,7 @@ class MandevConfig(BaseModel):
     experience: list[Experience] = []
     links: list[Link] = []
     github: GitHub | None = None
+    npm: Npm | None = None
+    pypi: PyPI | None = None
+    devto: DevTo | None = None
+    hashnode: Hashnode | None = None

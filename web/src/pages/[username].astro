@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import TerminalNav from '../components/TerminalNav.astro';
+import HoverPixelAvatar from '../components/HoverPixelAvatar';
 
 const { username } = Astro.params;
 const API_URL = import.meta.env.PUBLIC_API_URL || 'http://localhost:8000';
@@ -8,6 +9,7 @@ const API_URL = import.meta.env.PUBLIC_API_URL || 'http://localhost:8000';
 interface Skill {
   name: string;
   level: 'beginner' | 'intermediate' | 'advanced' | 'expert';
+  domain?: string;
 }
 
 interface Project {
@@ -84,6 +86,87 @@ interface GitHubConfig {
   show_pinned?: boolean;
 }
 
+interface NpmPackage {
+  name: string;
+  version: string;
+  description: string;
+  weekly_downloads: number;
+  url: string;
+}
+
+interface NpmStats {
+  total_packages: number;
+  total_weekly_downloads: number;
+  packages: NpmPackage[];
+}
+
+interface NpmConfig {
+  username: string;
+  show_packages?: boolean;
+  show_downloads?: boolean;
+}
+
+interface PyPIPackage {
+  name: string;
+  version: string;
+  description: string;
+  monthly_downloads: number;
+  url: string;
+}
+
+interface PyPIStats {
+  total_packages: number;
+  total_monthly_downloads: number;
+  packages: PyPIPackage[];
+}
+
+interface PyPIConfig {
+  packages: string[];
+  show_downloads?: boolean;
+}
+
+interface DevToArticle {
+  title: string;
+  url: string;
+  published_at: string;
+  reactions: number;
+  comments: number;
+  reading_time: number;
+  tags: string[];
+}
+
+interface DevToStats {
+  total_articles: number;
+  total_reactions: number;
+  total_comments: number;
+  articles: DevToArticle[];
+}
+
+interface DevToConfig {
+  username: string;
+  show_articles?: boolean;
+  show_stats?: boolean;
+}
+
+interface HashnodeArticle {
+  title: string;
+  url: string;
+  published_at: string;
+  reactions: number;
+  brief: string;
+}
+
+interface HashnodeStats {
+  total_articles: number;
+  total_reactions: number;
+  articles: HashnodeArticle[];
+}
+
+interface HashnodeConfig {
+  username: string;
+  show_articles?: boolean;
+}
+
 interface ProfileData {
   username?: string;
   profile?: Profile;
@@ -96,6 +179,14 @@ interface ProfileData {
   github?: GitHubConfig;
   github_stats?: GitHubStatsData | null;
   github_verified?: boolean;
+  npm?: NpmConfig;
+  npm_stats?: NpmStats | null;
+  pypi?: PyPIConfig;
+  pypi_stats?: PyPIStats | null;
+  devto?: DevToConfig;
+  devto_stats?: DevToStats | null;
+  hashnode?: HashnodeConfig;
+  hashnode_stats?: HashnodeStats | null;
   view_count?: number;
 }
 
@@ -118,7 +209,7 @@ const font = profileData?.theme?.font || 'JetBrains Mono';
 const profile = profileData?.profile;
 const sections = profileData?.layout?.sections || ['bio', 'skills', 'projects', 'experience', 'links'];
 
-const BAR_WIDTH = 20;
+const BAR_WIDTH = 16;
 const fillMap: Record<string, number> = {
   beginner: 0.25,
   intermediate: 0.5,
@@ -135,6 +226,27 @@ function skillBar(level: string): string {
 const githubConfig = profileData?.github;
 const githubStats = profileData?.github_stats;
 
+const npmConfig = profileData?.npm;
+const npmStats = profileData?.npm_stats;
+const pypiConfig = profileData?.pypi;
+const pypiStats = profileData?.pypi_stats;
+const devtoConfig = profileData?.devto;
+const devtoStats = profileData?.devto_stats;
+const hashnodeConfig = profileData?.hashnode;
+const hashnodeStats = profileData?.hashnode_stats;
+
+function formatNumber(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+  return n.toLocaleString();
+}
+
+function shortDate(iso: string): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
 function heatmapOpacity(count: number): number {
   if (count === 0) return 0.1;
   if (count < 3) return 0.3;
@@ -149,13 +261,30 @@ interface MonthLabel {
   col: number;
 }
 
-function getMonthLabels(contributions: { date: string; count: number }[]): MonthLabel[] {
-  if (contributions.length === 0) return [];
+// Pad partial first week so days align to correct rows (Sun=0 .. Sat=6)
+type ContribEntry = { date: string; count: number } | null;
+let paddedContributions: ContribEntry[] = [];
+let heatmapCols = 0;
+
+if (githubStats && githubStats.contributions.length > 0) {
+  const firstDate = new Date(githubStats.contributions[0].date + 'T00:00:00Z');
+  const padding = firstDate.getUTCDay(); // 0=Sun
+  paddedContributions = [
+    ...Array(padding).fill(null),
+    ...githubStats.contributions,
+  ];
+  heatmapCols = Math.ceil(paddedContributions.length / 7);
+}
+
+function getMonthLabels(padded: ContribEntry[]): MonthLabel[] {
+  if (padded.length === 0) return [];
   const labels: MonthLabel[] = [];
   let lastMonth = -1;
-  for (let i = 0; i < contributions.length; i++) {
+  for (let i = 0; i < padded.length; i++) {
+    const entry = padded[i];
+    if (!entry) continue;
     const col = Math.floor(i / 7);
-    const month = new Date(contributions[i].date).getMonth();
+    const month = new Date(entry.date + 'T00:00:00Z').getUTCMonth();
     if (month !== lastMonth) {
       labels.push({ name: MONTH_NAMES[month], col });
       lastMonth = month;
@@ -164,7 +293,44 @@ function getMonthLabels(contributions: { date: string; count: number }[]): Month
   return labels;
 }
 
-const monthLabels = githubStats ? getMonthLabels(githubStats.contributions) : [];
+const monthLabels = githubStats ? getMonthLabels(paddedContributions) : [];
+
+const levelOrder = ['expert', 'advanced', 'intermediate', 'beginner'] as const;
+function groupSkillsByLevel(skills: Skill[]) {
+  const groups: Record<string, Skill[]> = {};
+  for (const s of skills) {
+    (groups[s.level] ??= []).push(s);
+  }
+  return levelOrder.filter(l => groups[l]).map(l => ({ level: l, skills: groups[l] }));
+}
+
+function groupSkillsByDomain(skills: Skill[]) {
+  const groups: Record<string, Skill[]> = {};
+  for (const s of skills) {
+    const d = s.domain?.trim() || 'Other';
+    (groups[d] ??= []).push(s);
+  }
+  return Object.entries(groups).map(([domain, skills]) => ({ domain, skills }));
+}
+
+function hasDomains(skills: Skill[]): boolean {
+  return skills.some(s => s.domain?.trim());
+}
+
+const hasPackages = (npmStats && npmConfig?.show_packages !== false && npmStats.packages.length > 0)
+  || (pypiStats && pypiConfig && pypiStats.packages.length > 0);
+const hasWriting = (devtoStats && devtoConfig?.show_articles !== false && devtoStats.articles.length > 0)
+  || (hashnodeStats && hashnodeConfig?.show_articles !== false && hashnodeStats.articles.length > 0);
+
+const LEFT_SECTIONS = new Set(['bio', 'links', 'skills']);
+const RIGHT_SECTIONS = new Set(['experience', 'projects']);
+const leftSections = sections.filter((s: string) => LEFT_SECTIONS.has(s));
+const rightSections = sections.filter((s: string) => RIGHT_SECTIONS.has(s));
+const hasRightContent = rightSections.some((s: string) => {
+  if (s === 'experience') return profileData?.experience && profileData.experience.length > 0;
+  if (s === 'projects') return profileData?.projects && profileData.projects.length > 0;
+  return false;
+});
 
 const uname = (username || '').toUpperCase();
 ---
@@ -186,192 +352,309 @@ const uname = (username || '').toUpperCase();
         <p class="text-terminal-fg">No manual entry for {username}</p>
       </div>
     ) : (
-      <div class="space-y-6">
+      <div>
         {/* Man page header */}
         <pre class="text-terminal-accent text-xs">
 {`${uname}(7)${' '.repeat(Math.max(1, 54 - uname.length * 2 - 14))}man.dev Manual${' '.repeat(Math.max(1, 54 - uname.length * 2 - 14))}${uname}(7)`}
         </pre>
 
-        {sections.map((section: string) => {
-          if (section === 'bio') {
-            return (
-              <div>
-                {profile.avatar && (
-                  <div class="mb-4 avatar-pixel-wrap">
-                    <img
+        {/* Two-column layout: left (bio/skills/links), right (experience/projects) */}
+        {hasRightContent ? (
+          <div class="md:grid md:grid-cols-[3fr_7fr] md:gap-8">
+            <div class="profile-column">
+              {leftSections.map((section: string) => {
+                if (section === 'bio') {
+                  return (
+                    <div class="mt-6">
+                      {profile.avatar && (
+                        <HoverPixelAvatar
+                          client:load
+                          src={profile.avatar}
+                          alt={`${profile.name} avatar`}
+                          size={96}
+                          resolution={24}
+                          className="mb-4"
+                        />
+                      )}
+                      <h2 class="text-terminal-accent text-xs uppercase tracking-widest mb-1">Name</h2>
+                      <p class="pl-8">
+                        <span class="text-terminal-fg font-bold">{profile.name}</span>
+                        {profile.tagline && (
+                          <span class="text-terminal-dim"> &mdash; {profile.tagline}</span>
+                        )}
+                      </p>
+                      {profile.about && (
+                        <div class="mt-4">
+                          <h2 class="text-terminal-accent text-xs uppercase tracking-widest mb-1">Description</h2>
+                          <p class="pl-8 text-terminal-dim leading-relaxed whitespace-pre-line">{profile.about}</p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+
+                if (section === 'skills' && profileData.skills && profileData.skills.length > 0) {
+                  const useDomains = hasDomains(profileData.skills);
+                  return (
+                    <div class="section-divider">
+                      <h2 class="text-terminal-accent text-xs uppercase tracking-widest mb-1">Skills</h2>
+                      <div class="pl-8 space-y-3">
+                        {useDomains ? (
+                          groupSkillsByDomain(profileData.skills).map((group) => (
+                            <div>
+                              <h3 class="text-terminal-dim text-xs uppercase tracking-wider mb-1">{group.domain}</h3>
+                              <div class="space-y-1">
+                                {group.skills.map((skill: Skill) => (
+                                  <div class="flex items-center gap-2">
+                                    <span class="w-20 shrink-0 text-terminal-fg truncate">{skill.name}</span>
+                                    <span class="text-terminal-accent">{skillBar(skill.level)}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          groupSkillsByLevel(profileData.skills).map((group) => (
+                            <div>
+                              <h3 class="text-terminal-dim text-xs uppercase tracking-wider mb-1">{group.level}</h3>
+                              <div class="space-y-1">
+                                {group.skills.map((skill: Skill) => (
+                                  <div class="flex items-center gap-2">
+                                    <span class="w-20 shrink-0 text-terminal-fg truncate">{skill.name}</span>
+                                    <span class="text-terminal-accent">{skillBar(skill.level)}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  );
+                }
+
+                if (section === 'links' && profileData.links && profileData.links.length > 0) {
+                  return (
+                    <div class="section-divider">
+                      <h2 class="text-terminal-accent text-xs uppercase tracking-widest mb-1">Links</h2>
+                      <div class="pl-8 space-y-0.5">
+                        {profileData.links.map((link: Link) => (
+                          <p>
+                            <span class="text-terminal-dim">{link.label}:</span>{' '}
+                            <a href={link.url} class="text-terminal-accent hover:underline" target="_blank" rel="noopener noreferrer">{link.url}</a>
+                          </p>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                }
+
+                return null;
+              })}
+            </div>
+            <div class="profile-column">
+              {rightSections.map((section: string) => {
+                if (section === 'experience' && profileData.experience && profileData.experience.length > 0) {
+                  return (
+                    <div class="section-divider">
+                      <h2 class="text-terminal-accent text-xs uppercase tracking-widest mb-1">Experience</h2>
+                      <div class="pl-8 space-y-2">
+                        {profileData.experience.map((exp: Experience) => (
+                          <div>
+                            <p class="text-terminal-fg">
+                              {exp.role} at {exp.company}{' '}
+                              <span class="text-terminal-dim">
+                                ({exp.start}&ndash;{exp.end || 'present'})
+                              </span>
+                            </p>
+                            {exp.description && (
+                              <p class="text-terminal-dim pl-4 text-xs">{exp.description}</p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                }
+
+                if (section === 'projects' && profileData.projects && profileData.projects.length > 0) {
+                  return (
+                    <div class="section-divider">
+                      <h2 class="text-terminal-accent text-xs uppercase tracking-widest mb-1">Projects</h2>
+                      <div class="pl-8 space-y-3">
+                        {profileData.projects.map((project: Project) => (
+                          <div>
+                            <p class="text-terminal-fg font-bold">{project.name}</p>
+                            {project.description && (
+                              <p class="text-terminal-dim pl-4 text-xs">{project.description}</p>
+                            )}
+                            {project.url && (
+                              <p class="pl-4 text-xs">
+                                <a href={project.url} class="text-terminal-accent hover:underline" target="_blank" rel="noopener noreferrer">{project.url}</a>
+                              </p>
+                            )}
+                            {project.repo && !project.url && (
+                              <p class="pl-4 text-xs">
+                                <a href={project.repo} class="text-terminal-accent hover:underline" target="_blank" rel="noopener noreferrer">{project.repo}</a>
+                              </p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                }
+
+                return null;
+              })}
+            </div>
+          </div>
+        ) : (
+          /* Single-column fallback when no right content exists */
+          sections.map((section: string) => {
+            if (section === 'bio') {
+              return (
+                <div class="mt-6">
+                  {profile.avatar && (
+                    <HoverPixelAvatar
+                      client:load
                       src={profile.avatar}
                       alt={`${profile.name} avatar`}
+                      size={96}
+                      resolution={24}
+                      className="mb-4"
                     />
-                  </div>
-                )}
-                <h2 class="text-terminal-accent text-xs uppercase tracking-widest mb-1">Name</h2>
-                <p class="pl-8">
-                  <span class="text-terminal-fg font-bold">{profile.name}</span>
-                  {profile.tagline && (
-                    <span class="text-terminal-dim"> &mdash; {profile.tagline}</span>
                   )}
-                </p>
-                {profile.about && (
-                  <div class="mt-4">
-                    <h2 class="text-terminal-accent text-xs uppercase tracking-widest mb-1">Description</h2>
-                    <p class="pl-8 text-terminal-dim leading-relaxed whitespace-pre-line">{profile.about}</p>
+                  <h2 class="text-terminal-accent text-xs uppercase tracking-widest mb-1">Name</h2>
+                  <p class="pl-8">
+                    <span class="text-terminal-fg font-bold">{profile.name}</span>
+                    {profile.tagline && (
+                      <span class="text-terminal-dim"> &mdash; {profile.tagline}</span>
+                    )}
+                  </p>
+                  {profile.about && (
+                    <div class="mt-4">
+                      <h2 class="text-terminal-accent text-xs uppercase tracking-widest mb-1">Description</h2>
+                      <p class="pl-8 text-terminal-dim leading-relaxed whitespace-pre-line">{profile.about}</p>
+                    </div>
+                  )}
+                </div>
+              );
+            }
+
+            if (section === 'skills' && profileData.skills && profileData.skills.length > 0) {
+              const useDomains = hasDomains(profileData.skills);
+              return (
+                <div class="section-divider">
+                  <h2 class="text-terminal-accent text-xs uppercase tracking-widest mb-1">Skills</h2>
+                  <div class="pl-8 space-y-3">
+                    {useDomains ? (
+                      groupSkillsByDomain(profileData.skills).map((group) => (
+                        <div>
+                          <h3 class="text-terminal-dim text-xs uppercase tracking-wider mb-1">{group.domain}</h3>
+                          <div class="space-y-1">
+                            {group.skills.map((skill: Skill) => (
+                              <div class="flex items-center gap-2">
+                                <span class="w-20 shrink-0 text-terminal-fg truncate">{skill.name}</span>
+                                <span class="text-terminal-accent">{skillBar(skill.level)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      groupSkillsByLevel(profileData.skills).map((group) => (
+                        <div>
+                          <h3 class="text-terminal-dim text-xs uppercase tracking-wider mb-1">{group.level}</h3>
+                          <div class="space-y-1">
+                            {group.skills.map((skill: Skill) => (
+                              <div class="flex items-center gap-2">
+                                <span class="w-20 shrink-0 text-terminal-fg truncate">{skill.name}</span>
+                                <span class="text-terminal-accent">{skillBar(skill.level)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </div>
-                )}
-              </div>
-            );
-          }
-
-          if (section === 'skills' && profileData.skills && profileData.skills.length > 0) {
-            return (
-              <div>
-                <h2 class="text-terminal-accent text-xs uppercase tracking-widest mb-1">Skills</h2>
-                <div class="pl-8 space-y-1">
-                  {profileData.skills.map((skill: Skill) => (
-                    <div class="flex items-center gap-2">
-                      <span class="w-24 shrink-0 text-terminal-fg truncate">{skill.name}</span>
-                      <span class="text-terminal-accent">{skillBar(skill.level)}</span>
-                      <span class="text-terminal-dim text-xs">{skill.level}</span>
-                    </div>
-                  ))}
                 </div>
-              </div>
-            );
-          }
+              );
+            }
 
-          if (section === 'projects' && profileData.projects && profileData.projects.length > 0) {
-            return (
-              <div>
-                <h2 class="text-terminal-accent text-xs uppercase tracking-widest mb-1">Projects</h2>
-                <div class="pl-8 space-y-3">
-                  {profileData.projects.map((project: Project) => (
-                    <div>
-                      <p class="text-terminal-fg font-bold">{project.name}</p>
-                      {project.description && (
-                        <p class="text-terminal-dim pl-4 text-xs">{project.description}</p>
-                      )}
-                      {project.url && (
-                        <p class="pl-4 text-xs">
-                          <a href={project.url} class="text-terminal-accent hover:underline" target="_blank" rel="noopener noreferrer">{project.url}</a>
-                        </p>
-                      )}
-                      {project.repo && !project.url && (
-                        <p class="pl-4 text-xs">
-                          <a href={project.repo} class="text-terminal-accent hover:underline" target="_blank" rel="noopener noreferrer">{project.repo}</a>
-                        </p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            );
-          }
-
-          if (section === 'experience' && profileData.experience && profileData.experience.length > 0) {
-            return (
-              <div>
-                <h2 class="text-terminal-accent text-xs uppercase tracking-widest mb-1">Experience</h2>
-                <div class="pl-8 space-y-3">
-                  {profileData.experience.map((exp: Experience) => (
-                    <div>
-                      <p class="text-terminal-fg">
-                        {exp.role} at {exp.company}{' '}
-                        <span class="text-terminal-dim">
-                          ({exp.start}&ndash;{exp.end || 'present'})
-                        </span>
+            if (section === 'links' && profileData.links && profileData.links.length > 0) {
+              return (
+                <div class="section-divider">
+                  <h2 class="text-terminal-accent text-xs uppercase tracking-widest mb-1">Links</h2>
+                  <div class="pl-8 space-y-0.5">
+                    {profileData.links.map((link: Link) => (
+                      <p>
+                        <span class="text-terminal-dim">{link.label}:</span>{' '}
+                        <a href={link.url} class="text-terminal-accent hover:underline" target="_blank" rel="noopener noreferrer">{link.url}</a>
                       </p>
-                      {exp.description && (
-                        <p class="text-terminal-dim pl-4 text-xs">{exp.description}</p>
-                      )}
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
-            );
-          }
+              );
+            }
 
-          if (section === 'links' && profileData.links && profileData.links.length > 0) {
-            return (
-              <div>
-                <h2 class="text-terminal-accent text-xs uppercase tracking-widest mb-1">See Also</h2>
-                <div class="pl-8 space-y-0.5">
-                  {profileData.links.map((link: Link) => (
-                    <p>
-                      <span class="text-terminal-dim">{link.label}:</span>{' '}
-                      <a href={link.url} class="text-terminal-accent hover:underline" target="_blank" rel="noopener noreferrer">{link.url}</a>
-                    </p>
-                  ))}
-                </div>
-              </div>
-            );
-          }
+            return null;
+          })
+        )}
 
-          return null;
-        })}
-
-        {/* GitHub section */}
+        {/* Open Source section — merges GitHub stats, heatmap, languages, pinned repos */}
         {githubStats && (
-          <div>
+          <div class="section-divider">
+            <h2 class="text-terminal-accent text-xs uppercase tracking-widest mb-1">
+              Open Source
+              {profileData.github_verified && (
+                <span class="ml-2" style="font-size: 0.65rem; border: 1px solid var(--accent); padding: 1px 6px; vertical-align: middle;">
+                  verified
+                </span>
+              )}
+            </h2>
+
             {githubConfig?.show_stats !== false && (
-              <div>
-                <h2 class="text-terminal-accent text-xs uppercase tracking-widest mb-1">
-                  GitHub
-                  {profileData.github_verified && (
-                    <span class="ml-2" style="font-size: 0.65rem; border: 1px solid var(--accent); padding: 1px 6px; vertical-align: middle;">
-                      verified
-                    </span>
-                  )}
-                </h2>
-                <div class="pl-8">
-                  <p>
-                    <span class="text-terminal-dim">Stars: </span><span class="text-terminal-fg">{githubStats.total_stars.toLocaleString()}</span>
-                    <span class="text-terminal-dim ml-4">Repos: </span><span class="text-terminal-fg">{githubStats.total_repos.toLocaleString()}</span>
-                    <span class="text-terminal-dim ml-4">Followers: </span><span class="text-terminal-fg">{githubStats.followers.toLocaleString()}</span>
-                    <span class="text-terminal-dim ml-4">Contributions: </span><span class="text-terminal-fg">{githubStats.total_contributions.toLocaleString()}</span>
-                  </p>
-                  <p class="mt-1">
-                    <span class="text-terminal-dim">Current streak: </span><span class="text-terminal-fg">{githubStats.current_streak.toLocaleString()} days</span>
-                    <span class="text-terminal-dim ml-4">Longest: </span><span class="text-terminal-fg">{githubStats.longest_streak.toLocaleString()} days</span>
-                  </p>
-                </div>
+              <div class="pl-8">
+                <p>
+                  <span class="text-terminal-dim">Stars: </span><span class="text-terminal-fg">{githubStats.total_stars.toLocaleString()}</span>
+                  <span class="text-terminal-dim ml-4">Repos: </span><span class="text-terminal-fg">{githubStats.total_repos.toLocaleString()}</span>
+                  <span class="text-terminal-dim ml-4">Followers: </span><span class="text-terminal-fg">{githubStats.followers.toLocaleString()}</span>
+                  <span class="text-terminal-dim ml-4">Contributions: </span><span class="text-terminal-fg">{githubStats.total_contributions.toLocaleString()}</span>
+                </p>
+                <p class="mt-1">
+                  <span class="text-terminal-dim">Current streak: </span><span class="text-terminal-fg">{githubStats.current_streak.toLocaleString()} days</span>
+                  <span class="text-terminal-dim ml-4">Longest: </span><span class="text-terminal-fg">{githubStats.longest_streak.toLocaleString()} days</span>
+                </p>
               </div>
             )}
 
-            {githubConfig?.show_heatmap !== false && githubStats.contributions.length > 0 && (
-              <div class={githubConfig?.show_stats !== false ? 'mt-4' : ''}>
-                {githubConfig?.show_stats === false && (
-                  <h2 class="text-terminal-accent text-xs uppercase tracking-widest mb-1">
-                    GitHub
-                    {profileData.github_verified && (
-                      <span class="ml-2" style="font-size: 0.65rem; border: 1px solid var(--accent); padding: 1px 6px; vertical-align: middle;">
-                        verified
-                      </span>
-                    )}
-                  </h2>
-                )}
-                <div class="pl-8 mt-2" style="overflow-x: auto;">
-                  <div style="display: inline-block; position: relative;">
-                    <div style="display: flex; font-size: 0.5rem; line-height: 1; color: var(--dim); margin-bottom: 2px;">
-                      {monthLabels.map((label, i) => {
-                        const nextCol = i + 1 < monthLabels.length ? monthLabels[i + 1].col : Math.ceil(githubStats.contributions.length / 7);
-                        const span = nextCol - label.col;
-                        return (
-                          <span style={`width: ${span * 10}px; flex-shrink: 0;`}>{label.name}</span>
-                        );
-                      })}
-                    </div>
-                    <div style="display: inline-grid; grid-template-rows: repeat(7, 1fr); grid-auto-flow: column; gap: 2px; font-size: 0.5rem; line-height: 1;">
-                      {githubStats.contributions.map((day) => (
-                        <span style={`color: var(--accent); opacity: ${heatmapOpacity(day.count)};`} title={`${day.date}: ${day.count}`}>{'\u2588'}</span>
-                      ))}
-                    </div>
-                  </div>
+            {githubConfig?.show_heatmap !== false && paddedContributions.length > 0 && (
+              <div class="pl-8 mt-4">
+                <div style={`display: grid; grid-template-columns: repeat(${heatmapCols}, 1fr); column-gap: 2px; font-size: 0.5rem; line-height: 1; color: var(--dim); margin-bottom: 2px;`}>
+                  {monthLabels.map((label, i) => {
+                    const nextCol = i + 1 < monthLabels.length ? monthLabels[i + 1].col : heatmapCols;
+                    const span = nextCol - label.col;
+                    return (
+                      <span style={`grid-column: span ${span}; overflow: hidden; white-space: nowrap;`}>{span >= 3 ? label.name : ''}</span>
+                    );
+                  })}
+                </div>
+                <div style={`display: grid; grid-template-rows: repeat(7, 10px); grid-template-columns: repeat(${heatmapCols}, 1fr); grid-auto-flow: column; gap: 2px;`}>
+                  {paddedContributions.map((day) => (
+                    day ? (
+                      <span style={`background: var(--accent); opacity: ${heatmapOpacity(day.count)}; border-radius: 1px;`} title={`${day.date}: ${day.count}`} />
+                    ) : (
+                      <span />
+                    )
+                  ))}
                 </div>
               </div>
             )}
 
             {githubConfig?.show_languages !== false && githubStats.languages.length > 0 && (
               <div class="mt-4">
-                <h2 class="text-terminal-accent text-xs uppercase tracking-widest mb-1">Languages</h2>
+                <h3 class="text-terminal-dim text-xs uppercase tracking-wider pl-8 mb-1">Languages</h3>
                 <div class="pl-8 mt-2">
                   <div style="display: flex; width: 100%; height: 8px; border-radius: 2px; overflow: hidden;">
                     {githubStats.languages.map((lang) => (
@@ -391,7 +674,7 @@ const uname = (username || '').toUpperCase();
 
             {githubConfig?.show_pinned !== false && githubStats.pinned_repos.length > 0 && (
               <div class="mt-4">
-                <h2 class="text-terminal-accent text-xs uppercase tracking-widest mb-1">Pinned Repositories</h2>
+                <h3 class="text-terminal-dim text-xs uppercase tracking-wider pl-8 mb-1">Pinned Repositories</h3>
                 <div class="pl-8 space-y-3">
                   {githubStats.pinned_repos.map((repo) => (
                     <div>
@@ -420,9 +703,146 @@ const uname = (username || '').toUpperCase();
           </div>
         )}
 
-        {/* Output formats */}
-        <div>
-          <h2 class="text-terminal-accent text-xs uppercase tracking-widest mb-1">Output</h2>
+        {/* Packages section — merges npm + PyPI */}
+        {hasPackages && (
+          <div class="section-divider">
+            <h2 class="text-terminal-accent text-xs uppercase tracking-widest mb-1">Packages</h2>
+
+            {npmStats && npmConfig?.show_packages !== false && npmStats.packages.length > 0 && (
+              <div class="mt-2">
+                <h3 class="text-terminal-dim text-xs uppercase tracking-wider pl-8 mb-1">npm</h3>
+                <div class="pl-8">
+                  <p class="text-terminal-dim text-xs mb-2">
+                    {npmStats.total_packages} packages
+                    {npmConfig?.show_downloads !== false && (
+                      <span> &middot; {formatNumber(npmStats.total_weekly_downloads)} downloads/wk</span>
+                    )}
+                  </p>
+                  <div class="space-y-2">
+                    {npmStats.packages.map((pkg: NpmPackage) => (
+                      <div>
+                        <div class="flex items-baseline justify-between gap-4">
+                          <a href={pkg.url} class="text-terminal-fg font-bold hover:underline" target="_blank" rel="noopener noreferrer">
+                            {pkg.name}
+                            <span class="text-terminal-dim font-normal ml-2">v{pkg.version}</span>
+                          </a>
+                          {npmConfig?.show_downloads !== false && (
+                            <span class="text-terminal-dim text-xs whitespace-nowrap">
+                              {formatNumber(pkg.weekly_downloads)}/wk
+                            </span>
+                          )}
+                        </div>
+                        {pkg.description && (
+                          <p class="text-terminal-dim pl-4 text-xs">{pkg.description}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {pypiStats && pypiConfig && pypiStats.packages.length > 0 && (
+              <div class="mt-4">
+                <h3 class="text-terminal-dim text-xs uppercase tracking-wider pl-8 mb-1">PyPI</h3>
+                <div class="pl-8">
+                  <p class="text-terminal-dim text-xs mb-2">
+                    {pypiStats.total_packages} packages
+                    {pypiConfig?.show_downloads !== false && (
+                      <span> &middot; {formatNumber(pypiStats.total_monthly_downloads)} downloads/mo</span>
+                    )}
+                  </p>
+                  <div class="space-y-2">
+                    {pypiStats.packages.map((pkg: PyPIPackage) => (
+                      <div>
+                        <div class="flex items-baseline justify-between gap-4">
+                          <a href={pkg.url} class="text-terminal-fg font-bold hover:underline" target="_blank" rel="noopener noreferrer">
+                            {pkg.name}
+                            <span class="text-terminal-dim font-normal ml-2">v{pkg.version}</span>
+                          </a>
+                          {pypiConfig?.show_downloads !== false && (
+                            <span class="text-terminal-dim text-xs whitespace-nowrap">
+                              {formatNumber(pkg.monthly_downloads)}/mo
+                            </span>
+                          )}
+                        </div>
+                        {pkg.description && (
+                          <p class="text-terminal-dim pl-4 text-xs">{pkg.description}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Writing section — merges Dev.to + Hashnode */}
+        {hasWriting && (
+          <div class="section-divider">
+            <h2 class="text-terminal-accent text-xs uppercase tracking-widest mb-1">Writing</h2>
+
+            {devtoStats && devtoConfig?.show_articles !== false && devtoStats.articles.length > 0 && (
+              <div class="mt-2">
+                <h3 class="text-terminal-dim text-xs uppercase tracking-wider pl-8 mb-1">Dev.to</h3>
+                <div class="pl-8">
+                  {devtoConfig?.show_stats !== false && (
+                    <p class="text-terminal-dim text-xs mb-2">
+                      {devtoStats.total_articles} articles &middot; {formatNumber(devtoStats.total_reactions)} reactions &middot; {formatNumber(devtoStats.total_comments)} comments
+                    </p>
+                  )}
+                  <div class="space-y-2">
+                    {devtoStats.articles.map((article: DevToArticle) => (
+                      <div>
+                        <div class="flex items-baseline justify-between gap-4">
+                          <a href={article.url} class="text-terminal-fg font-bold hover:underline" target="_blank" rel="noopener noreferrer">{article.title}</a>
+                          <span class="text-terminal-dim text-xs whitespace-nowrap">
+                            {'\u2665'} {article.reactions} &middot; {article.reading_time}m
+                          </span>
+                        </div>
+                        <p class="text-terminal-dim pl-4 text-xs">
+                          {shortDate(article.published_at)}
+                          {article.tags.length > 0 && (
+                            <span> &middot; {article.tags.join(', ')}</span>
+                          )}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {hashnodeStats && hashnodeConfig?.show_articles !== false && hashnodeStats.articles.length > 0 && (
+              <div class="mt-4">
+                <h3 class="text-terminal-dim text-xs uppercase tracking-wider pl-8 mb-1">Hashnode</h3>
+                <div class="pl-8">
+                  <p class="text-terminal-dim text-xs mb-2">
+                    {hashnodeStats.total_articles} articles &middot; {formatNumber(hashnodeStats.total_reactions)} reactions
+                  </p>
+                  <div class="space-y-2">
+                    {hashnodeStats.articles.map((article: HashnodeArticle) => (
+                      <div>
+                        <div class="flex items-baseline justify-between gap-4">
+                          <a href={article.url} class="text-terminal-fg font-bold hover:underline" target="_blank" rel="noopener noreferrer">{article.title}</a>
+                          <span class="text-terminal-dim text-xs whitespace-nowrap">
+                            {'\u2665'} {article.reactions}
+                          </span>
+                        </div>
+                        <p class="text-terminal-dim pl-4 text-xs">{shortDate(article.published_at)}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Exports */}
+        <div class="section-divider">
+          <h2 class="text-terminal-accent text-xs uppercase tracking-widest mb-1">Exports</h2>
           <div class="pl-8 space-y-0.5">
             <p>
               <span class="text-terminal-dim">json:</span>{' '}

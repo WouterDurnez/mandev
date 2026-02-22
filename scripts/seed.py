@@ -21,10 +21,9 @@ _repo_root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_repo_root / "api"))
 sys.path.insert(0, str(_repo_root / "core"))
 
-from piccolo.columns import Where  # noqa: E402
 
 from mandev_api.auth import hash_password  # noqa: E402
-from mandev_api.tables import GitHubStatsCache, User, UserProfile  # noqa: E402
+from mandev_api.tables import GitHubStatsCache, IntegrationCache, User, UserProfile  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Avatar generation (pure Python PNG identicons)
@@ -114,12 +113,12 @@ SEED_USERS = [
                 "avatar": _generate_identicon("alice"),
             },
             "skills": [
-                {"name": "Python", "level": "expert"},
-                {"name": "Go", "level": "expert"},
-                {"name": "PostgreSQL", "level": "advanced"},
-                {"name": "Kafka", "level": "advanced"},
-                {"name": "Kubernetes", "level": "intermediate"},
-                {"name": "Rust", "level": "beginner"},
+                {"name": "Python", "level": "expert", "domain": "Backend"},
+                {"name": "Go", "level": "expert", "domain": "Backend"},
+                {"name": "PostgreSQL", "level": "advanced", "domain": "Data"},
+                {"name": "Kafka", "level": "advanced", "domain": "Data"},
+                {"name": "Kubernetes", "level": "intermediate", "domain": "Infrastructure"},
+                {"name": "Rust", "level": "beginner", "domain": "Systems"},
             ],
             "projects": [
                 {"name": "streamline", "repo": "https://github.com/alice/streamline", "description": "High-throughput event processing pipeline"},
@@ -138,6 +137,7 @@ SEED_USERS = [
             ],
             "theme": {"scheme": "dracula", "font": "JetBrains Mono", "mode": "dark"},
             "github": {"username": "alice-example"},
+            "pypi": {"packages": ["streamline", "dbmigrate", "loadtest"], "show_downloads": True, "max_packages": 10},
         },
     },
     {
@@ -152,13 +152,13 @@ SEED_USERS = [
                 "avatar": _generate_identicon("bob"),
             },
             "skills": [
-                {"name": "TypeScript", "level": "expert"},
-                {"name": "React", "level": "expert"},
-                {"name": "CSS", "level": "expert"},
-                {"name": "Next.js", "level": "advanced"},
-                {"name": "Figma", "level": "advanced"},
-                {"name": "Three.js", "level": "intermediate"},
-                {"name": "Rust", "level": "beginner"},
+                {"name": "TypeScript", "level": "expert", "domain": "Frontend"},
+                {"name": "React", "level": "expert", "domain": "Frontend"},
+                {"name": "CSS", "level": "expert", "domain": "Design"},
+                {"name": "Next.js", "level": "advanced", "domain": "Frontend"},
+                {"name": "Figma", "level": "advanced", "domain": "Design"},
+                {"name": "Three.js", "level": "intermediate", "domain": "Graphics"},
+                {"name": "Rust", "level": "beginner", "domain": "Systems"},
             ],
             "projects": [
                 {"name": "motion-kit", "repo": "https://github.com/bob/motion-kit", "url": "https://motion-kit.dev", "description": "Spring-based animation library for React"},
@@ -176,6 +176,7 @@ SEED_USERS = [
             ],
             "theme": {"scheme": "tokyo-night", "font": "Fira Code", "mode": "dark"},
             "github": {"username": "bob-example"},
+            "devto": {"username": "bob-example", "show_articles": True, "show_stats": True, "max_articles": 5},
         },
     },
     {
@@ -190,14 +191,14 @@ SEED_USERS = [
                 "avatar": _generate_identicon("carol"),
             },
             "skills": [
-                {"name": "Terraform", "level": "expert"},
-                {"name": "Kubernetes", "level": "expert"},
-                {"name": "AWS", "level": "expert"},
-                {"name": "Python", "level": "advanced"},
-                {"name": "Go", "level": "advanced"},
-                {"name": "Bash", "level": "advanced"},
-                {"name": "Prometheus", "level": "intermediate"},
-                {"name": "Argo CD", "level": "intermediate"},
+                {"name": "Terraform", "level": "expert", "domain": "IaC"},
+                {"name": "Kubernetes", "level": "expert", "domain": "Platform"},
+                {"name": "AWS", "level": "expert", "domain": "Cloud"},
+                {"name": "Python", "level": "advanced", "domain": "Languages"},
+                {"name": "Go", "level": "advanced", "domain": "Languages"},
+                {"name": "Bash", "level": "advanced", "domain": "Languages"},
+                {"name": "Prometheus", "level": "intermediate", "domain": "Observability"},
+                {"name": "Argo CD", "level": "intermediate", "domain": "Platform"},
             ],
             "projects": [
                 {"name": "infra-as-code", "repo": "https://github.com/carol/infra-as-code", "description": "Production-ready Terraform modules for AWS"},
@@ -226,11 +227,11 @@ SEED_USERS = [
                 "avatar": _generate_identicon("dave"),
             },
             "skills": [
-                {"name": "Python", "level": "expert"},
-                {"name": "Rust", "level": "advanced"},
-                {"name": "TypeScript", "level": "advanced"},
-                {"name": "C", "level": "intermediate"},
-                {"name": "Zig", "level": "beginner"},
+                {"name": "Python", "level": "expert", "domain": "Languages"},
+                {"name": "Rust", "level": "advanced", "domain": "Systems"},
+                {"name": "TypeScript", "level": "advanced", "domain": "Languages"},
+                {"name": "C", "level": "intermediate", "domain": "Systems"},
+                {"name": "Zig", "level": "beginner", "domain": "Systems"},
             ],
             "projects": [
                 {"name": "fastparse", "repo": "https://github.com/dave/fastparse", "url": "https://fastparse.io", "description": "High-performance parsing library with zero-copy semantics"},
@@ -251,6 +252,7 @@ SEED_USERS = [
             ],
             "theme": {"scheme": "catppuccin", "font": "Victor Mono", "mode": "dark"},
             "github": {"username": "dave-example"},
+            "npm": {"username": "dave-example", "show_packages": True, "show_downloads": True, "max_packages": 10},
         },
     },
     {
@@ -400,6 +402,61 @@ SEED_GITHUB_STATS: dict[str, dict] = {
 _SEED_GITHUB_USERNAMES = list(SEED_GITHUB_STATS.keys())
 
 
+# ---------------------------------------------------------------------------
+# Integration seed data
+# ---------------------------------------------------------------------------
+
+SEED_INTEGRATION_CACHE: list[dict] = [
+    {
+        "service": "npm",
+        "lookup_key": "dave-example",
+        "stats": {
+            "total_packages": 5,
+            "total_weekly_downloads": 45231,
+            "packages": [
+                {"name": "fastparse", "version": "2.1.0", "description": "High-performance parsing library", "weekly_downloads": 12340, "url": "https://www.npmjs.com/package/fastparse"},
+                {"name": "cli-forge", "version": "1.3.2", "description": "Opinionated CLI framework", "weekly_downloads": 8901, "url": "https://www.npmjs.com/package/cli-forge"},
+                {"name": "dotenv-vault", "version": "3.0.1", "description": "Encrypted .env management", "weekly_downloads": 11200, "url": "https://www.npmjs.com/package/dotenv-vault"},
+                {"name": "bench-it", "version": "0.9.4", "description": "Micro-benchmarking toolkit", "weekly_downloads": 7450, "url": "https://www.npmjs.com/package/bench-it"},
+                {"name": "type-guard", "version": "1.1.0", "description": "Runtime type checking", "weekly_downloads": 5340, "url": "https://www.npmjs.com/package/type-guard"},
+            ],
+            "fetched_at": "2026-02-21T00:00:00+00:00",
+        },
+    },
+    {
+        "service": "pypi",
+        "lookup_key": "ab95f7098f30dfbb",
+        "stats": {
+            "total_packages": 3,
+            "total_monthly_downloads": 128450,
+            "packages": [
+                {"name": "streamline", "version": "4.2.1", "description": "High-throughput event processing pipeline", "monthly_downloads": 67200, "url": "https://pypi.org/project/streamline/"},
+                {"name": "dbmigrate", "version": "2.8.0", "description": "Zero-downtime database migration toolkit", "monthly_downloads": 45100, "url": "https://pypi.org/project/dbmigrate/"},
+                {"name": "loadtest", "version": "1.5.3", "description": "Declarative load testing for gRPC", "monthly_downloads": 16150, "url": "https://pypi.org/project/loadtest/"},
+            ],
+            "fetched_at": "2026-02-21T00:00:00+00:00",
+        },
+    },
+    {
+        "service": "devto",
+        "lookup_key": "bob-example",
+        "stats": {
+            "total_articles": 23,
+            "total_reactions": 1842,
+            "total_comments": 312,
+            "articles": [
+                {"title": "Building Accessible Design Systems from Scratch", "url": "https://dev.to/bob/design-systems-a11y", "published_at": "2025-11-15T10:00:00Z", "reactions": 423, "comments": 67, "reading_time": 12, "tags": ["a11y", "react", "design"]},
+                {"title": "Spring Animations in React: A Deep Dive", "url": "https://dev.to/bob/spring-animations-react", "published_at": "2025-09-22T08:00:00Z", "reactions": 356, "comments": 45, "reading_time": 8, "tags": ["react", "animation", "css"]},
+                {"title": "CSS Container Queries Changed Everything", "url": "https://dev.to/bob/css-container-queries", "published_at": "2025-07-10T12:00:00Z", "reactions": 298, "comments": 34, "reading_time": 6, "tags": ["css", "frontend"]},
+                {"title": "Why I Switched from Next.js to Astro", "url": "https://dev.to/bob/nextjs-to-astro", "published_at": "2025-05-03T09:00:00Z", "reactions": 512, "comments": 89, "reading_time": 10, "tags": ["astro", "nextjs", "webdev"]},
+                {"title": "The State of TypeScript in 2025", "url": "https://dev.to/bob/typescript-2025", "published_at": "2025-01-20T14:00:00Z", "reactions": 253, "comments": 77, "reading_time": 15, "tags": ["typescript", "javascript"]},
+            ],
+            "fetched_at": "2026-02-21T00:00:00+00:00",
+        },
+    },
+]
+
+
 async def seed() -> None:
     """Clear existing seed users and re-insert all seed profiles.
 
@@ -408,12 +465,12 @@ async def seed() -> None:
     # Delete existing seed users' profiles, then the users themselves
     existing_users = (
         await User.objects()
-        .where(Where(User.username.is_in(SEED_USERNAMES)))
+        .where(User.username.is_in(SEED_USERNAMES))
         .run()
     )
     for user in existing_users:
         await UserProfile.delete().where(UserProfile.user_id == user.id).run()
-    await User.delete().where(Where(User.username.is_in(SEED_USERNAMES))).run()
+    await User.delete().where(User.username.is_in(SEED_USERNAMES)).run()
 
     # Insert fresh seed data
     for entry in SEED_USERS:
@@ -432,7 +489,7 @@ async def seed() -> None:
 
     # Delete existing GitHub stats cache entries for seed users
     await GitHubStatsCache.delete().where(
-        Where(GitHubStatsCache.github_username.is_in(_SEED_GITHUB_USERNAMES))
+        GitHubStatsCache.github_username.is_in(_SEED_GITHUB_USERNAMES)
     ).run()
 
     # Insert fake GitHub stats
@@ -445,9 +502,28 @@ async def seed() -> None:
         )
         await cache.save().run()
 
+    # Delete existing integration cache entries for seed data
+    seed_lookup_keys = [entry["lookup_key"] for entry in SEED_INTEGRATION_CACHE]
+    await IntegrationCache.delete().where(
+        IntegrationCache.lookup_key.is_in(seed_lookup_keys)
+    ).run()
+
+    # Insert fake integration stats
+    for entry in SEED_INTEGRATION_CACHE:
+        ic = IntegrationCache(
+            service=entry["service"],
+            lookup_key=entry["lookup_key"],
+            stats_json=json.dumps(entry["stats"]),
+            fetched_at=now,
+        )
+        await ic.save().run()
+
     print(f"Seeded {len(SEED_USERS)} users: {', '.join(SEED_USERNAMES)}")
     print(
         f"Seeded GitHub stats for: {', '.join(_SEED_GITHUB_USERNAMES)}"
+    )
+    print(
+        f"Seeded integration cache: {len(SEED_INTEGRATION_CACHE)} entries"
     )
 
 

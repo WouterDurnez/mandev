@@ -15,7 +15,12 @@ class Settings(BaseSettings):
     github_oauth_client_id: str | None = None
     github_oauth_client_secret: str | None = None
 
-    model_config = {"env_prefix": "MANDEV_"}
+    model_config = {
+        "env_prefix": "MANDEV_",
+        "env_file": ".env",
+        "env_file_encoding": "utf-8",
+        "extra": "ignore",
+    }
 
 
 settings = Settings()

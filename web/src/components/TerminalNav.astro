@@ -1,6 +1,7 @@
 ---
 import TypeWriter from './TypeWriter.tsx';
 import ModeToggle from './ModeToggle.tsx';
+import AuthNav from './AuthNav.tsx';
 
 interface NavItem {
   label: string;
@@ -25,23 +26,7 @@ const { items, active, class: className = '' } = Astro.props;
       <span>$ </span><TypeWriter text="man dev" speed={80} loop client:load />
     </a>
     <div class="nav-links absolute right-4 flex items-center gap-1">
-      {items.map((item, i) => (
-        <>
-          <a
-            href={item.href}
-            class={`transition-colors duration-150 no-underline ${
-              active === item.label
-                ? 'text-terminal-accent'
-                : 'text-terminal-dim hover:text-terminal-fg'
-            }`}
-          >
-            {item.label}
-          </a>
-          {i < items.length - 1 && (
-            <span class="text-terminal-border">|</span>
-          )}
-        </>
-      ))}
+      <AuthNav items={items} active={active} client:load />
     </div>
   </nav>
 </header>

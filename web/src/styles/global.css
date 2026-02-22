@@ -411,3 +411,18 @@ body {
   border-top: 1px dashed var(--border);
   margin: 1.5rem 0;
 }
+
+/* ============================================================
+   Section Divider (profile page)
+   ============================================================ */
+
+.section-divider {
+  border-top: 1px dashed var(--border);
+  padding-top: 1.5rem;
+  margin-top: 2rem;
+}
+
+.profile-column > :first-child.section-divider {
+  border-top: none;
+  margin-top: 1rem;
+}

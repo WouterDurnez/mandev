@@ -14,6 +14,8 @@ const navItems = [
   <TerminalNav items={navItems} active="signup" />
   <main class="max-w-terminal mx-auto px-4 py-16">
     <pre class="text-terminal-dim text-sm mb-4">$ mandev signup</pre>
-    <AuthForm mode="signup" client:load />
+    <div class="terminal-box" data-title="signup">
+      <AuthForm mode="signup" client:load />
+    </div>
   </main>
 </BaseLayout>

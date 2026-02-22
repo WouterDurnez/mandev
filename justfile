@@ -32,7 +32,12 @@ migration name:
 seed:
     uv run python scripts/seed.py
 
+# Build npm CLI
+cli-build:
+    cd cli-npm && npm run build
+
 # Install all dependencies
 install:
     uv sync
     cd web && npm install
+    cd cli-npm && npm install

@@ -17,6 +17,8 @@ services:
     environment:
       MANDEV_DB_HOST: db
       MANDEV_SECRET_KEY: dev-secret-change-me
+      # MANDEV_GITHUB_OAUTH_CLIENT_ID: ""
+      # MANDEV_GITHUB_OAUTH_CLIENT_SECRET: ""
     depends_on:
       - db
 

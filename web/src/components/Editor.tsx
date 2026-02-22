@@ -10,6 +10,7 @@ import { apiGet, apiPost, apiPut, getToken } from '../lib/api';
 interface Skill {
   name: string;
   level: 'beginner' | 'intermediate' | 'advanced' | 'expert';
+  domain?: string;
 }
 
 interface Project {
@@ -45,6 +46,32 @@ interface ThemeSection {
   mode: 'dark' | 'light';
 }
 
+interface NpmSection {
+  username: string;
+  show_packages: boolean;
+  show_downloads: boolean;
+  max_packages: number;
+}
+
+interface PyPISection {
+  packages: string[];
+  show_downloads: boolean;
+  max_packages: number;
+}
+
+interface DevToSection {
+  username: string;
+  show_articles: boolean;
+  show_stats: boolean;
+  max_articles: number;
+}
+
+interface HashnodeSection {
+  username: string;
+  show_articles: boolean;
+  max_articles: number;
+}
+
 interface Config {
   profile: ProfileSection;
   theme: ThemeSection;
@@ -53,6 +80,10 @@ interface Config {
   experience: Experience[];
   links: Link[];
   layout: { sections: string[] };
+  npm?: NpmSection;
+  pypi?: PyPISection;
+  devto?: DevToSection;
+  hashnode?: HashnodeSection;
 }
 
 /* ------------------------------------------------------------------ */
@@ -164,6 +195,22 @@ function emptyConfig(): Config {
   };
 }
 
+function emptyNpm(): NpmSection {
+  return { username: '', show_packages: true, show_downloads: true, max_packages: 10 };
+}
+
+function emptyPyPI(): PyPISection {
+  return { packages: [], show_downloads: true, max_packages: 10 };
+}
+
+function emptyDevTo(): DevToSection {
+  return { username: '', show_articles: true, show_stats: true, max_articles: 5 };
+}
+
+function emptyHashnode(): HashnodeSection {
+  return { username: '', show_articles: true, max_articles: 5 };
+}
+
 /* ------------------------------------------------------------------ */
 /*  Editor Component                                                   */
 /* ------------------------------------------------------------------ */
@@ -181,6 +228,7 @@ export default function Editor() {
   const [toast, setToast] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [githubUsername, setGithubUsername] = useState<string | null>(null);
+  const [username, setUsername] = useState<string | null>(null);
 
   /* ---- Mount: auth check + fetch profile ---- */
   useEffect(() => {
@@ -213,6 +261,10 @@ export default function Editor() {
               layout: data.layout || {
                 sections: ['bio', 'skills', 'projects', 'experience', 'links'],
               },
+              npm: data.npm || undefined,
+              pypi: data.pypi || undefined,
+              devto: data.devto || undefined,
+              hashnode: data.hashnode || undefined,
             });
 
             // Apply the user's saved theme to the page
@@ -237,6 +289,7 @@ export default function Editor() {
         if (res.ok) {
           const me = await res.json();
           setGithubUsername(me.github_username || null);
+          setUsername(me.username || null);
         }
       })
       .catch(() => {});
@@ -312,7 +365,7 @@ export default function Editor() {
   function addSkill() {
     setConfig((c) => ({
       ...c,
-      skills: [...c.skills, { name: '', level: 'intermediate' }],
+      skills: [...c.skills, { name: '', level: 'intermediate', domain: '' }],
     }));
   }
 
@@ -423,7 +476,7 @@ export default function Editor() {
               <PixelAvatar
                 value={config.profile.avatar}
                 onChange={(dataUrl) => updateProfile('avatar', dataUrl)}
-                resolution={32}
+                resolution={24}
                 size={96}
               />
             </Field>
@@ -493,39 +546,6 @@ export default function Editor() {
           </div>
         </section>
 
-        {/* ===== GitHub Section ===== */}
-        <section>
-          <SectionHeader title="GITHUB" />
-          <div className="pl-4 space-y-3">
-            {githubUsername ? (
-              <div className="flex items-center gap-3">
-                <span style={{ color: 'var(--fg)' }}>
-                  Connected as <span style={{ color: 'var(--accent)' }}>@{githubUsername}</span>
-                </span>
-                <button style={btnGhost} onClick={handleGithubUnlink}>
-                  [ UNLINK ]
-                </button>
-              </div>
-            ) : (
-              <div>
-                <p style={{ color: 'var(--dim)' }} className="mb-2">
-                  Link your GitHub account to get a verified badge on your profile.
-                </p>
-                <a
-                  href={`${API_URL}/api/auth/github`}
-                  style={{
-                    ...btnPrimary,
-                    textDecoration: 'none',
-                    display: 'inline-block',
-                  }}
-                >
-                  [ LINK GITHUB ]
-                </a>
-              </div>
-            )}
-          </div>
-        </section>
-
         {/* ===== Skills Section ===== */}
         <section>
           <SectionHeader title="SKILLS" />
@@ -538,6 +558,12 @@ export default function Editor() {
                     value={skill.name}
                     onChange={(e) => updateSkill(i, 'name', e.target.value)}
                     placeholder="Skill name"
+                  />
+                  <input
+                    style={{ ...inputStyle, width: '8rem', flex: 'none' }}
+                    value={skill.domain || ''}
+                    onChange={(e) => updateSkill(i, 'domain', e.target.value)}
+                    placeholder="Domain"
                   />
                   <select
                     style={{ ...selectStyle, width: 'auto', minWidth: '10rem' }}
@@ -697,6 +723,235 @@ export default function Editor() {
           </div>
         </section>
 
+        {/* ===== Integrations Group ===== */}
+        <div
+          className="space-y-6 pt-4"
+          style={{ borderTop: '1px dashed var(--border)' }}
+        >
+          <h2
+            className="text-xs uppercase tracking-widest"
+            style={{ color: 'var(--dim)' }}
+          >
+            -- INTEGRATIONS --
+          </h2>
+
+          {/* GitHub */}
+          <section>
+            <SectionHeader title="GITHUB" />
+            <div className="pl-4 space-y-3">
+              {githubUsername ? (
+                <div className="flex items-center gap-3">
+                  <span style={{ color: 'var(--fg)' }}>
+                    Connected as <span style={{ color: 'var(--accent)' }}>@{githubUsername}</span>
+                  </span>
+                  <button style={btnGhost} onClick={handleGithubUnlink}>
+                    [ UNLINK ]
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  <p style={{ color: 'var(--dim)' }} className="mb-2">
+                    Link your GitHub account to get a verified badge on your profile.
+                  </p>
+                  <a
+                    href={`${API_URL}/api/auth/github?token=${getToken()}`}
+                    style={{
+                      ...btnPrimary,
+                      textDecoration: 'none',
+                      display: 'inline-block',
+                    }}
+                  >
+                    [ LINK GITHUB ]
+                  </a>
+                </div>
+              )}
+            </div>
+          </section>
+
+          {/* npm */}
+          <section>
+            <SectionHeader title="NPM" />
+            <div className="pl-4 space-y-3">
+              {config.npm ? (
+                <>
+                  <Field label="username">
+                    <input
+                      style={inputStyle}
+                      value={config.npm.username}
+                      onChange={(e) =>
+                        setConfig((c) => ({
+                          ...c,
+                          npm: { ...(c.npm || emptyNpm()), username: e.target.value },
+                        }))
+                      }
+                      placeholder="npm-username"
+                    />
+                  </Field>
+                  <button
+                    style={btnGhost}
+                    onClick={() => setConfig((c) => ({ ...c, npm: undefined }))}
+                  >
+                    [ REMOVE npm ]
+                  </button>
+                </>
+              ) : (
+                <button
+                  style={btnGhost}
+                  onClick={() => setConfig((c) => ({ ...c, npm: emptyNpm() }))}
+                >
+                  [ + ENABLE npm ]
+                </button>
+              )}
+            </div>
+          </section>
+
+          {/* PyPI */}
+          <section>
+            <SectionHeader title="PYPI" />
+            <div className="pl-4 space-y-3">
+              {config.pypi ? (
+                <>
+                  <Field label="packages">
+                    <div className="space-y-2">
+                      {config.pypi.packages.map((pkg, i) => (
+                        <div key={i} className="flex items-center gap-2">
+                          <input
+                            style={{ ...inputStyle, flex: 1 }}
+                            value={pkg}
+                            onChange={(e) =>
+                              setConfig((c) => {
+                                const pkgs = [...(c.pypi?.packages || [])];
+                                pkgs[i] = e.target.value;
+                                return { ...c, pypi: { ...(c.pypi || emptyPyPI()), packages: pkgs } };
+                              })
+                            }
+                            placeholder="package-name"
+                          />
+                          <button
+                            style={btnRemove}
+                            onClick={() =>
+                              setConfig((c) => ({
+                                ...c,
+                                pypi: {
+                                  ...(c.pypi || emptyPyPI()),
+                                  packages: (c.pypi?.packages || []).filter((_, j) => j !== i),
+                                },
+                              }))
+                            }
+                          >
+                            [ x ]
+                          </button>
+                        </div>
+                      ))}
+                      <button
+                        style={btnGhost}
+                        onClick={() =>
+                          setConfig((c) => ({
+                            ...c,
+                            pypi: {
+                              ...(c.pypi || emptyPyPI()),
+                              packages: [...(c.pypi?.packages || []), ''],
+                            },
+                          }))
+                        }
+                      >
+                        [ + ADD PACKAGE ]
+                      </button>
+                    </div>
+                  </Field>
+                  <button
+                    style={btnGhost}
+                    onClick={() => setConfig((c) => ({ ...c, pypi: undefined }))}
+                  >
+                    [ REMOVE PyPI ]
+                  </button>
+                </>
+              ) : (
+                <button
+                  style={btnGhost}
+                  onClick={() => setConfig((c) => ({ ...c, pypi: emptyPyPI() }))}
+                >
+                  [ + ENABLE PyPI ]
+                </button>
+              )}
+            </div>
+          </section>
+
+          {/* Dev.to */}
+          <section>
+            <SectionHeader title="DEV.TO" />
+            <div className="pl-4 space-y-3">
+              {config.devto ? (
+                <>
+                  <Field label="username">
+                    <input
+                      style={inputStyle}
+                      value={config.devto.username}
+                      onChange={(e) =>
+                        setConfig((c) => ({
+                          ...c,
+                          devto: { ...(c.devto || emptyDevTo()), username: e.target.value },
+                        }))
+                      }
+                      placeholder="devto-username"
+                    />
+                  </Field>
+                  <button
+                    style={btnGhost}
+                    onClick={() => setConfig((c) => ({ ...c, devto: undefined }))}
+                  >
+                    [ REMOVE Dev.to ]
+                  </button>
+                </>
+              ) : (
+                <button
+                  style={btnGhost}
+                  onClick={() => setConfig((c) => ({ ...c, devto: emptyDevTo() }))}
+                >
+                  [ + ENABLE Dev.to ]
+                </button>
+              )}
+            </div>
+          </section>
+
+          {/* Hashnode */}
+          <section>
+            <SectionHeader title="HASHNODE" />
+            <div className="pl-4 space-y-3">
+              {config.hashnode ? (
+                <>
+                  <Field label="username">
+                    <input
+                      style={inputStyle}
+                      value={config.hashnode.username}
+                      onChange={(e) =>
+                        setConfig((c) => ({
+                          ...c,
+                          hashnode: { ...(c.hashnode || emptyHashnode()), username: e.target.value },
+                        }))
+                      }
+                      placeholder="hashnode-username"
+                    />
+                  </Field>
+                  <button
+                    style={btnGhost}
+                    onClick={() => setConfig((c) => ({ ...c, hashnode: undefined }))}
+                  >
+                    [ REMOVE Hashnode ]
+                  </button>
+                </>
+              ) : (
+                <button
+                  style={btnGhost}
+                  onClick={() => setConfig((c) => ({ ...c, hashnode: emptyHashnode() }))}
+                >
+                  [ + ENABLE Hashnode ]
+                </button>
+              )}
+            </div>
+          </section>
+        </div>
+
         {/* ===== Save ===== */}
         <div className="flex items-center gap-4 pt-4">
           <button
@@ -706,6 +961,20 @@ export default function Editor() {
           >
             [ {saving ? 'PUSHING...' : 'PUSH'} ]
           </button>
+          {username && (
+            <a
+              href={`/${username}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                ...btnGhost,
+                textDecoration: 'none',
+                display: 'inline-block',
+              }}
+            >
+              [ VIEW PROFILE ]
+            </a>
+          )}
         </div>
       </div>
 

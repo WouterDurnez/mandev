@@ -7,12 +7,28 @@ interface ProfileData {
   username?: string;
   profile?: { name: string; tagline?: string; avatar?: string };
   theme?: { scheme?: string };
-  skills?: { name: string; level: string }[];
+  skills?: { name: string; level: string; domain?: string }[];
   github_stats?: {
     total_stars: number;
     total_repos: number;
     total_contributions: number;
     followers: number;
+  } | null;
+  npm_stats?: {
+    total_packages: number;
+    total_weekly_downloads: number;
+  } | null;
+  pypi_stats?: {
+    total_packages: number;
+    total_monthly_downloads: number;
+  } | null;
+  devto_stats?: {
+    total_articles: number;
+    total_reactions: number;
+  } | null;
+  hashnode_stats?: {
+    total_articles: number;
+    total_reactions: number;
   } | null;
 }
 
@@ -27,6 +43,12 @@ const fillMap: Record<string, number> = {
   advanced: 0.75,
   expert: 1.0,
 };
+
+function fmtSvgNum(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+  return String(n);
+}
 
 function escapeXml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -103,6 +125,29 @@ function renderCard(username: string, data: ProfileData): string {
       `followers: ${stats.followers.toLocaleString()}`,
     ];
     lines.push(`<text x="${PAD}" y="${y}" fill="${c.dim}" font-size="10" font-family="${FONT}">${statItems.join('  ·  ')}</text>`);
+  }
+
+  // Integration compact stats
+  const integrationParts: string[] = [];
+  if (data.npm_stats) {
+    integrationParts.push(`npm: ${data.npm_stats.total_packages} pkgs · ${fmtSvgNum(data.npm_stats.total_weekly_downloads)}/wk`);
+  }
+  if (data.pypi_stats) {
+    integrationParts.push(`pypi: ${data.pypi_stats.total_packages} pkgs · ${fmtSvgNum(data.pypi_stats.total_monthly_downloads)}/mo`);
+  }
+  if (data.devto_stats) {
+    integrationParts.push(`dev.to: ${data.devto_stats.total_articles} posts · ${fmtSvgNum(data.devto_stats.total_reactions)} ♥`);
+  }
+  if (data.hashnode_stats) {
+    integrationParts.push(`hashnode: ${data.hashnode_stats.total_articles} posts · ${fmtSvgNum(data.hashnode_stats.total_reactions)} ♥`);
+  }
+  if (integrationParts.length > 0) {
+    if (!stats) {
+      y = Math.max(y + 4, CARD_H - 50);
+    } else {
+      y += 4;
+    }
+    lines.push(`<text x="${PAD}" y="${y}" fill="${c.dim}" font-size="9" font-family="${FONT}">${escapeXml(integrationParts.join('  ·  '))}</text>`);
   }
 
   // Watermark

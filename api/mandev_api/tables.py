@@ -44,3 +44,16 @@ class ProfileView(Table, tablename="profile_views"):
     username = Varchar(length=63, index=True)
     date = Varchar(length=10)  # YYYY-MM-DD
     count = Integer(default=0)
+
+
+class IntegrationCache(Table, tablename="integration_cache"):
+    """Generic cache for integration stats (npm, PyPI, Dev.to, etc.).
+
+    Uses ``(service, lookup_key)`` as logical composite key so adding
+    new integrations requires no schema changes.
+    """
+
+    service = Varchar(length=32, index=True)
+    lookup_key = Varchar(length=255, index=True)
+    stats_json = Text(default="{}")
+    fetched_at = Timestamptz(default=TimestamptzNow())

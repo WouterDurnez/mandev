@@ -14,8 +14,10 @@
     "@astrojs/react": "^4.0.0",
     "@astrojs/tailwind": "^6.0.0",
     "astro": "^5.0.0",
+    "dotting": "^2.1.13",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-easy-crop": "^5.5.6",
     "tailwindcss": "^3.4.0"
   },
   "devDependencies": {

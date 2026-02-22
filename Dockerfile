@@ -16,4 +16,4 @@ RUN uv sync --no-dev --no-install-workspace && \
 
 EXPOSE 8000
 
-CMD ["uv", "run", "uvicorn", "mandev_api.app:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["sh", "-c", "uv run piccolo migrations forwards all && uv run uvicorn mandev_api.app:create_app --factory --host 0.0.0.0 --port 8000"]

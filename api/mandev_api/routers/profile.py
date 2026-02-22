@@ -1,5 +1,7 @@
 """Profile and config-validation routes."""
 
+import asyncio
+import hashlib
 import json
 from datetime import date, datetime, timezone
 
@@ -11,6 +13,11 @@ from mandev_core import MandevConfig
 from mandev_api.config import settings
 from mandev_api.tables import User, UserProfile, ProfileView
 from mandev_api.github_service import get_github_stats
+from mandev_api.integration_service import get_cached_stats
+from mandev_api.npm_fetcher import fetch_npm_stats
+from mandev_api.pypi_fetcher import fetch_pypi_stats
+from mandev_api.devto_fetcher import fetch_devto_stats
+from mandev_api.hashnode_fetcher import fetch_hashnode_stats
 from mandev_api.routers.auth import _get_current_user
 
 router = APIRouter(tags=["profile"])
@@ -149,17 +156,80 @@ async def get_public_profile(
         and user.github_username.lower() == config_gh_username.lower()
     )
 
-    # Attach GitHub stats if configured
+    # Fetch all integration stats in parallel
     github_config = config.get("github")
-    if github_config and github_config.get("username"):
-        token = user.github_token or settings.github_token
-        stats = await get_github_stats(
-            github_config["username"],
-            token=token,
+    npm_config = config.get("npm")
+    pypi_config = config.get("pypi")
+    devto_config = config.get("devto")
+    hashnode_config = config.get("hashnode")
+
+    async def _fetch_github() -> dict | None:
+        if github_config and github_config.get("username"):
+            token = user.github_token or settings.github_token
+            return await get_github_stats(github_config["username"], token=token)
+        return None
+
+    async def _fetch_npm() -> dict | None:
+        if npm_config and npm_config.get("username"):
+            return await get_cached_stats(
+                "npm",
+                npm_config["username"],
+                fetch_npm_stats,
+                username=npm_config["username"],
+                max_packages=npm_config.get("max_packages", 10),
+            )
+        return None
+
+    async def _fetch_pypi() -> dict | None:
+        if pypi_config and pypi_config.get("packages"):
+            pkgs = pypi_config["packages"]
+            lookup = hashlib.sha256(",".join(sorted(pkgs)).encode()).hexdigest()[:16]
+            return await get_cached_stats(
+                "pypi",
+                lookup,
+                fetch_pypi_stats,
+                packages=pkgs,
+                max_packages=pypi_config.get("max_packages", 10),
+            )
+        return None
+
+    async def _fetch_devto() -> dict | None:
+        if devto_config and devto_config.get("username"):
+            return await get_cached_stats(
+                "devto",
+                devto_config["username"],
+                fetch_devto_stats,
+                username=devto_config["username"],
+                max_articles=devto_config.get("max_articles", 5),
+            )
+        return None
+
+    async def _fetch_hashnode() -> dict | None:
+        if hashnode_config and hashnode_config.get("username"):
+            return await get_cached_stats(
+                "hashnode",
+                hashnode_config["username"],
+                fetch_hashnode_stats,
+                username=hashnode_config["username"],
+                max_articles=hashnode_config.get("max_articles", 5),
+            )
+        return None
+
+    github_stats, npm_stats, pypi_stats, devto_stats, hashnode_stats = (
+        await asyncio.gather(
+            _fetch_github(),
+            _fetch_npm(),
+            _fetch_pypi(),
+            _fetch_devto(),
+            _fetch_hashnode(),
         )
-        response["github_stats"] = stats
-    else:
-        response["github_stats"] = None
+    )
+
+    response["github_stats"] = github_stats
+    response["npm_stats"] = npm_stats
+    response["pypi_stats"] = pypi_stats
+    response["devto_stats"] = devto_stats
+    response["hashnode_stats"] = hashnode_stats
 
     # Increment view count (skip bots)
     ua = (request.headers.get("user-agent") or "").lower()

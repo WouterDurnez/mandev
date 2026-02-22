@@ -6,29 +6,6 @@ import pytest
 from httpx import AsyncClient
 
 
-@pytest.mark.anyio
-async def test_github_redirect_returns_302(client: AsyncClient) -> None:
-    """GET /api/auth/github redirects to GitHub OAuth."""
-    with patch("mandev_api.routers.github_oauth.settings") as mock_settings:
-        mock_settings.github_oauth_client_id = "test-client-id"
-        resp = await client.get("/api/auth/github", follow_redirects=False)
-    assert resp.status_code == 307
-    location = resp.headers["location"]
-    assert "github.com/login/oauth/authorize" in location
-    assert "read" in location and "user" in location
-
-
-@pytest.mark.anyio
-async def test_github_callback_without_code(client: AsyncClient) -> None:
-    """GET /api/auth/github/callback without code returns 400."""
-    token = await _signup_and_login(client, "cb_nocode")
-    resp = await client.get(
-        "/api/auth/github/callback",
-        headers={"Authorization": f"Bearer {token}"},
-    )
-    assert resp.status_code == 400
-
-
 async def _signup_and_login(client: AsyncClient, username: str = "ghuser") -> str:
     """Create a user and return a JWT."""
     await client.post(
@@ -40,6 +17,58 @@ async def _signup_and_login(client: AsyncClient, username: str = "ghuser") -> st
         json={"email": f"{username}@example.com", "password": "pass"},
     )
     return resp.json()["access_token"]
+
+
+@pytest.mark.anyio
+async def test_github_redirect_returns_302(client: AsyncClient) -> None:
+    """GET /api/auth/github redirects to GitHub OAuth with state."""
+    token = await _signup_and_login(client, "redirect_user")
+    with patch("mandev_api.routers.github_oauth.settings") as mock_settings:
+        mock_settings.github_oauth_client_id = "test-client-id"
+        resp = await client.get(
+            f"/api/auth/github?token={token}",
+            follow_redirects=False,
+        )
+    assert resp.status_code == 307
+    location = resp.headers["location"]
+    assert "github.com/login/oauth/authorize" in location
+    assert "read" in location and "user" in location
+    assert "state=" in location
+
+
+@pytest.mark.anyio
+async def test_github_redirect_without_token(client: AsyncClient) -> None:
+    """GET /api/auth/github without token returns 401."""
+    with patch("mandev_api.routers.github_oauth.settings") as mock_settings:
+        mock_settings.github_oauth_client_id = "test-client-id"
+        resp = await client.get("/api/auth/github")
+    assert resp.status_code == 401
+
+
+@pytest.mark.anyio
+async def test_github_callback_without_code(client: AsyncClient) -> None:
+    """GET /api/auth/github/callback without code returns 400."""
+    token = await _signup_and_login(client, "cb_nocode")
+    resp = await client.get(
+        f"/api/auth/github/callback?state={token}",
+    )
+    assert resp.status_code == 400
+
+
+@pytest.mark.anyio
+async def test_github_callback_without_state(client: AsyncClient) -> None:
+    """GET /api/auth/github/callback without state returns 401."""
+    resp = await client.get("/api/auth/github/callback?code=testcode123")
+    assert resp.status_code == 401
+
+
+@pytest.mark.anyio
+async def test_github_callback_with_invalid_state(client: AsyncClient) -> None:
+    """GET /api/auth/github/callback with bad state returns 401."""
+    resp = await client.get(
+        "/api/auth/github/callback?code=testcode123&state=garbage-token",
+    )
+    assert resp.status_code == 401
 
 
 @pytest.mark.anyio
@@ -64,8 +93,7 @@ async def test_github_callback_exchanges_code(client: AsyncClient) -> None:
         mock_client_cls.return_value = mock_http
 
         resp = await client.get(
-            "/api/auth/github/callback?code=testcode123",
-            headers={"Authorization": f"Bearer {token}"},
+            f"/api/auth/github/callback?code=testcode123&state={token}",
             follow_redirects=False,
         )
 
